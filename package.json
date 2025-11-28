@@ -2,9 +2,6 @@
   "name": "aoas-web",
   "version": "1.0.0",
   "description": "AOAS Web Contact Form with Resend Integration",
-  "scripts": {
-    "build": "echo 'Build complete'"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
