@@ -140,6 +140,125 @@ document.addEventListener('DOMContentLoaded', function () {
     if (whyImageSlides.length > 0) {
         setInterval(nextWhySlide, 4000);
     }
+
+    // Writing animation for Mission and Vision descriptions
+    const missionVisionDescriptions = document.querySelectorAll('.mission-vision-description');
+    const missionVisionLists = document.querySelectorAll('.mission-vision-list');
+
+    function animateTextWriting(element, delay = 0) {
+        if (!element) return;
+        
+        const originalText = element.innerHTML;
+        element.innerHTML = '';
+        element.style.opacity = '1';
+        
+        // Extract text content while preserving HTML structure
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = originalText;
+        const textNodes = [];
+        
+        function extractText(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                textNodes.push({
+                    type: 'text',
+                    content: node.textContent
+                });
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tagName = node.tagName.toLowerCase();
+                const openTag = `<${tagName}${node.className ? ` class="${node.className}"` : ''}>`;
+                const closeTag = `</${tagName}>`;
+                
+                textNodes.push({
+                    type: 'openTag',
+                    content: openTag
+                });
+                
+                Array.from(node.childNodes).forEach(child => {
+                    extractText(child);
+                });
+                
+                textNodes.push({
+                    type: 'closeTag',
+                    content: closeTag
+                });
+            }
+        }
+        
+        Array.from(tempDiv.childNodes).forEach(node => {
+            extractText(node);
+        });
+        
+        let nodeIndex = 0;
+        let charIndex = 0;
+        const typingSpeed = 15; // milliseconds per character
+        
+        function typeNext() {
+            if (nodeIndex >= textNodes.length) {
+                return;
+            }
+
+            const currentNode = textNodes[nodeIndex];
+            
+            if (currentNode.type === 'openTag' || currentNode.type === 'closeTag') {
+                element.innerHTML += currentNode.content;
+                nodeIndex++;
+                return typeNext();
+            }
+
+            if (currentNode.type === 'text') {
+                if (charIndex < currentNode.content.length) {
+                    element.innerHTML += currentNode.content[charIndex];
+                    charIndex++;
+                    setTimeout(typeNext, typingSpeed);
+                } else {
+                    charIndex = 0;
+                    nodeIndex++;
+                    return typeNext();
+                }
+            } else {
+                nodeIndex++;
+                return typeNext();
+            }
+        }
+        
+        setTimeout(() => {
+            typeNext();
+        }, delay);
+    }
+
+    // Animate mission/vision descriptions when they come into view
+    const missionVisionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                const card = entry.target.closest('.mission-vision-card');
+                if (card) {
+                    const description = card.querySelector('.mission-vision-description');
+                    const list = card.querySelector('.mission-vision-list');
+                    
+                    if (description && !description.dataset.animated) {
+                        description.dataset.animated = 'true';
+                        animateTextWriting(description, index * 300);
+                    }
+                    
+                    if (list && !list.dataset.animated) {
+                        list.dataset.animated = 'true';
+                        const listItems = list.querySelectorAll('li');
+                        listItems.forEach((item, itemIndex) => {
+                            item.style.opacity = '0';
+                            setTimeout(() => {
+                                item.style.transition = 'opacity 0.5s ease';
+                                item.style.opacity = '1';
+                            }, (index * 300) + 1500 + (itemIndex * 100));
+                        });
+                    }
+                }
+            }
+        });
+    }, { threshold: 0.3 });
+
+    missionVisionDescriptions.forEach(desc => {
+        missionVisionObserver.observe(desc);
+    });
 });
 
 // FAQ Accordion Functionality
@@ -381,6 +500,202 @@ document.addEventListener('DOMContentLoaded', function () {
         el.style.transition = `opacity 0.8s ease-out ${index * 0.1}s, transform 0.8s ease-out ${index * 0.1}s`;
         observer.observe(el);
     });
+
+    // About Us Section Micro Animations
+    const aboutSection = document.querySelector('#about');
+    if (aboutSection) {
+        const aboutLabel = aboutSection.querySelector('.section-label');
+        const aboutTitle = aboutSection.querySelector('.section-title');
+        const aboutDescriptions = aboutSection.querySelectorAll('.about-description');
+
+        // Initialize About Us section elements
+        if (aboutLabel) {
+            aboutLabel.style.opacity = '0';
+            aboutLabel.style.transform = 'translateX(-20px)';
+        }
+        if (aboutTitle) {
+            aboutTitle.style.opacity = '0';
+            aboutTitle.style.transform = 'translateY(30px) scale(0.98)';
+        }
+        aboutDescriptions.forEach((desc, index) => {
+            desc.style.opacity = '0';
+            desc.style.transform = 'translateY(30px)';
+            desc.style.transition = `opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${0.4 + (index * 0.15)}s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${0.4 + (index * 0.15)}s`;
+        });
+
+        // Create observer for About Us section
+        const aboutObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Animate label
+                    if (aboutLabel && !aboutLabel.classList.contains('animate-in')) {
+                        aboutLabel.classList.add('animate-in');
+                        setTimeout(() => {
+                            aboutLabel.style.opacity = '1';
+                            aboutLabel.style.transform = 'translateX(0)';
+                        }, 50);
+                    }
+
+                    // Animate title
+                    if (aboutTitle && !aboutTitle.classList.contains('animate-in')) {
+                        aboutTitle.classList.add('animate-in');
+                        setTimeout(() => {
+                            aboutTitle.style.opacity = '1';
+                            aboutTitle.style.transform = 'translateY(0) scale(1)';
+                        }, 200);
+                    }
+
+                    // Animate descriptions with stagger
+                    aboutDescriptions.forEach((desc, index) => {
+                        if (!desc.classList.contains('animate-in')) {
+                            desc.classList.add('animate-in');
+                            setTimeout(() => {
+                                desc.style.opacity = '1';
+                                desc.style.transform = 'translateY(0)';
+                            }, 400 + (index * 150));
+                        }
+                    });
+                }
+            });
+        }, { 
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        });
+
+        aboutObserver.observe(aboutSection);
+    }
+
+    // Contact Section (Get in Touch) Micro Animations
+    const contactSection = document.querySelector('#contact');
+    if (contactSection) {
+        const contactLabel = contactSection.querySelector('.section-label-white');
+        const contactTitle = contactSection.querySelector('.contact-title');
+        const contactSubtitle = contactSection.querySelector('.contact-subtitle');
+        const contactForm = contactSection.querySelector('.contact-form-wrapper');
+        const formGroups = contactSection.querySelectorAll('.form-group');
+
+        // Initialize Contact section elements
+        if (contactLabel) {
+            contactLabel.style.opacity = '0';
+            contactLabel.style.transform = 'translateY(-20px)';
+            contactLabel.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+        }
+        if (contactTitle) {
+            contactTitle.style.opacity = '0';
+            contactTitle.style.transform = 'translateY(30px)';
+            contactTitle.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s';
+        }
+        if (contactSubtitle) {
+            contactSubtitle.style.opacity = '0';
+            contactSubtitle.style.transform = 'translateY(20px)';
+            contactSubtitle.style.transition = 'opacity 0.7s ease-out 0.4s, transform 0.7s ease-out 0.4s';
+        }
+        if (contactForm) {
+            contactForm.style.opacity = '0';
+            contactForm.style.transform = 'translateX(30px) scale(0.98)';
+            contactForm.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.6s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.6s';
+        }
+        formGroups.forEach((group, index) => {
+            group.style.opacity = '0';
+            group.style.transform = 'translateY(20px)';
+            group.style.transition = `opacity 0.6s ease-out ${0.8 + (index * 0.1)}s, transform 0.6s ease-out ${0.8 + (index * 0.1)}s`;
+        });
+
+        // Create observer for Contact section
+        const contactObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (contactLabel && !contactLabel.classList.contains('animate-in')) {
+                        contactLabel.classList.add('animate-in');
+                        contactLabel.style.opacity = '1';
+                        contactLabel.style.transform = 'translateY(0)';
+                    }
+                    if (contactTitle && !contactTitle.classList.contains('animate-in')) {
+                        contactTitle.classList.add('animate-in');
+                        contactTitle.style.opacity = '1';
+                        contactTitle.style.transform = 'translateY(0)';
+                    }
+                    if (contactSubtitle && !contactSubtitle.classList.contains('animate-in')) {
+                        contactSubtitle.classList.add('animate-in');
+                        contactSubtitle.style.opacity = '1';
+                        contactSubtitle.style.transform = 'translateY(0)';
+                    }
+                    if (contactForm && !contactForm.classList.contains('animate-in')) {
+                        contactForm.classList.add('animate-in');
+                        contactForm.style.opacity = '1';
+                        contactForm.style.transform = 'translateX(0) scale(1)';
+                    }
+                    formGroups.forEach((group) => {
+                        if (!group.classList.contains('animate-in')) {
+                            group.classList.add('animate-in');
+                            group.style.opacity = '1';
+                            group.style.transform = 'translateY(0)';
+                        }
+                    });
+                }
+            });
+        }, { 
+            threshold: 0.15,
+            rootMargin: '0px 0px -100px 0px'
+        });
+
+        contactObserver.observe(contactSection);
+    }
+
+    // Footer Section Micro Animations
+    const footer = document.querySelector('.footer');
+    if (footer) {
+        const footerDescription = footer.querySelector('.footer-description');
+        const footerColumns = footer.querySelectorAll('.footer-column');
+        const footerNav = footer.querySelector('.footer-nav');
+
+        // Initialize Footer elements
+        if (footerDescription) {
+            footerDescription.style.opacity = '0';
+            footerDescription.style.transform = 'translateY(30px)';
+            footerDescription.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+        }
+        footerColumns.forEach((column, index) => {
+            column.style.opacity = '0';
+            column.style.transform = 'translateY(30px)';
+            column.style.transition = `opacity 0.7s ease-out ${0.2 + (index * 0.1)}s, transform 0.7s ease-out ${0.2 + (index * 0.1)}s`;
+        });
+        if (footerNav) {
+            footerNav.style.opacity = '0';
+            footerNav.style.transform = 'translateY(20px)';
+            footerNav.style.transition = 'opacity 0.6s ease-out 0.8s, transform 0.6s ease-out 0.8s';
+        }
+
+        // Create observer for Footer
+        const footerObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (footerDescription && !footerDescription.classList.contains('animate-in')) {
+                        footerDescription.classList.add('animate-in');
+                        footerDescription.style.opacity = '1';
+                        footerDescription.style.transform = 'translateY(0)';
+                    }
+                    footerColumns.forEach((column) => {
+                        if (!column.classList.contains('animate-in')) {
+                            column.classList.add('animate-in');
+                            column.style.opacity = '1';
+                            column.style.transform = 'translateY(0)';
+                        }
+                    });
+                    if (footerNav && !footerNav.classList.contains('animate-in')) {
+                        footerNav.classList.add('animate-in');
+                        footerNav.style.opacity = '1';
+                        footerNav.style.transform = 'translateY(0)';
+                    }
+                }
+            });
+        }, { 
+            threshold: 0.2,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        footerObserver.observe(footer);
+    }
 
     // Animate list items in Why Choose Us section
     const whyListItems = document.querySelectorAll('.why-list li');
