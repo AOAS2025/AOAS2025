@@ -1,0 +1,27 @@
+# Development files
+*.bat
+*.md
+node_modules/
+
+# Other platform configs (not needed for Vercel)
+railway.json
+render.yaml
+Procfile
+ecosystem.config.js
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment (should be set in Vercel dashboard)
+.env
+.env.local
+
