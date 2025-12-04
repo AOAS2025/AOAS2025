@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Join AOAS - Customer Service Representative and Administrative Office Worker position.">
+    <title>Careers - Join Our Team | AOAS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="AOAS Logo/favicon.ico">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.6;
+        }
+
+        /* Hero - Ultra Compact */
+        .hero-minimal {
+            background: linear-gradient(135deg, #FF6D1F 0%, #e55a0f 50%, #d14a08 100%);
+            padding: 48px 20px 40px;
+            text-align: center;
+        }
+
+        .hero-minimal h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-minimal h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 12px;
+        }
+
+        .hero-minimal p {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 750px;
+            margin: 0 auto;
+            padding: 32px 20px;
+        }
+
+        /* Map Section */
+        .map-section {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px 16px;
+            margin-bottom: 20px;
+        }
+
+        .map-section h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #FF6D1F;
+        }
+
+        .location-options {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .location-btn {
+            background: #FF6D1F;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            text-align: center;
+        }
+
+        .location-btn:hover:not(:disabled) {
+            background: #d14a08;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 109, 31, 0.2);
+        }
+
+        .location-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-blue {
+            background: #3b82f6;
+        }
+
+        .btn-blue:hover:not(:disabled) {
+            background: #2563eb;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .coord-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .coord-group label {
+            font-size: 0.875rem;
+            color: #1a1a1a;
+            font-weight: 500;
+        }
+
+        .coord-group input {
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+
+        .coord-group input:focus {
+            outline: none;
+            border-color: #FF6D1F;
+            box-shadow: 0 0 0 3px rgba(255, 109, 31, 0.1);
+        }
+
+        .map-instruction {
+            background: #eff6ff;
+            border-left: 3px solid #3b82f6;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            color: #1e40af;
+            margin-bottom: 12px;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+            cursor: crosshair;
+        }
+
+        .map-info {
+            background: #fff7ed;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .map-info p {
+            margin-bottom: 6px;
+        }
+
+        .map-info strong {
+            color: #d14a08;
+        }
+
+        /* Overview Box */
+        .overview {
+            background: #fff7ed;
+            border-left: 3px solid #FF6D1F;
+            border-radius: 8px;
+            padding: 20px 16px;
+            margin-bottom: 28px;
+        }
+
+        .overview h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #d14a08;
+            margin-bottom: 12px;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            font-size: 0.8125rem;
+        }
+
+        .overview-item strong {
+            display: block;
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            color: #d14a08;
+            font-weight: 600;
+            margin-bottom: 2px;
+            letter-spacing: 0.3px;
+        }
+
+        .overview-item span {
+            color: #6b7280;
+        }
+
+        /* Section Blocks */
+        .section-block {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px 16px;
+            margin-bottom: 20px;
+        }
+
+        .section-block h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #FF6D1F;
+        }
+
+        /* Lists */
+        .clean-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .clean-list li {
+            padding-left: 20px;
+            margin-bottom: 8px;
+            position: relative;
+            font-size: 0.875rem;
+            color: #4b5563;
+            line-height: 1.5;
+        }
+
+        .clean-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #FF6D1F;
+            font-weight: 700;
+        }
+
+        /* Responsibility Cards */
+        .resp-card {
+            background: #fef8f3;
+            border-radius: 8px;
+            padding: 16px 14px;
+            margin-bottom: 12px;
+        }
+
+        .resp-card h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            background: #FF6D1F;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .resp-card ul li {
+            font-size: 0.8125rem;
+            margin-bottom: 6px;
+        }
+
+        .resp-card ul li::before {
+            content: '→';
+        }
+
+        /* Form Overrides */
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            background: white;
+            border: 4px solid #9ca3af;
+            /* Thicker, visible border */
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-container h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            font-size: 0.9375rem;
+            padding: 14px 16px;
+            /* More padding */
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            /* Rounded corners */
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background-color: #f9fafb;
+            /* Slight background */
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #FF6D1F;
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(255, 109, 31, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+        }
+
+        .form-group small {
+            font-size: 0.75rem;
+            color: #6b7280;
+            display: block;
+            margin-top: 4px;
+        }
+
+        .radio-options-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9375rem;
+            background-color: #f9fafb;
+            margin-bottom: 0;
+            /* Reset */
+        }
+
+        .radio-option:hover {
+            border-color: #FF6D1F;
+            background-color: #fff7ed;
+            transform: translateY(-1px);
+        }
+
+        /* Active state styling using :has if supported, or just rely on hover/focus for now */
+        .radio-option:has(input:checked) {
+            border-color: #FF6D1F;
+            background-color: #fff7ed;
+            box-shadow: 0 2px 5px rgba(255, 109, 31, 0.1);
+        }
+
+        .radio-option:hover {
+            border-color: #FF6D1F;
+            background: #fff7ed;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            accent-color: #FF6D1F;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            font-size: 0.9375rem;
+            background: linear-gradient(135deg, #FF6D1F, #d14a08);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 640px) {
+            .hero-minimal {
+                padding: 40px 16px 32px;
+            }
+
+            .hero-minimal h1 {
+                font-size: 1.75rem;
+            }
+
+            .hero-minimal h2 {
+                font-size: 1rem;
+            }
+
+            .hero-minimal p {
+                font-size: 0.8125rem;
+            }
+
+            .main-content {
+                padding: 24px 16px;
+            }
+
+            .overview {
+                padding: 16px 14px;
+            }
+
+            .overview-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .section-block {
+                padding: 16px 14px;
+            }
+
+            .map-section {
+                padding: 16px 14px;
+            }
+
+            #map {
+                height: 300px;
+            }
+
+            .coord-input {
+                width: 100%;
+            }
+
+            .coord-input input {
+                flex: 1;
+                min-width: 100px;
+            }
+
+            .form-container {
+                padding: 20px 16px;
+            }
+        }
+
+        /* Custom Leaflet Styles */
+        .custom-div-icon {
+            background: none !important;
+            border: none !important;
+        }
+
+        /* Modern location pin styles */
+        .location-pin {
+
+            width: 40px;
+            height: 40px;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .location-pin-small {
+            width: 32px;
+            height: 32px;
+
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        /* Hide routing instructions panel */
+        .leaflet-routing-container {
+            display: none !important;
+        }
+
+        /* Fix z-index for popups */
+        .leaflet-popup-pane {
+            z-index: 700 !important;
+        }
+
+        .leaflet-popup {
+            z-index: 800 !important;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .leaflet-popup-content {
+            margin: 12px;
+            line-height: 1.5;
+        }
+
+        /* Layer control styling */
+        .leaflet-control-layers {
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="AOAS Logo/AOASLOGO.png" alt="AOAS Logo" class="logo-icon">
+                    <span class="logo-text">
+                        <span class="logo-text-full">Attainment Office Administrative Services</span>
+                        <span class="logo-text-short">AOAS</span>
+                    </span>
+                </div>
+                <button class="hamburger-menu" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="header-actions">
+                    <a href="https://www.facebook.com/profile.php?id=61578320660587" target="_blank"
+                        class="header-social" aria-label="Facebook">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                        <span class="social-text">Facebook</span>
+                    </a>
+                    <a href="index.html" class="btn btn-primary">HOME</a>
+                    <a href="index.html#about" class="btn btn-primary">ABOUT US</a>
+                    <a href="index.html#contact" class="btn btn-primary">CONTACT US</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero-minimal">
+        <h1>Join Our Team</h1>
+        <h2>Customer Service Representative / Admin Office Worker</h2>
+        <p>We are looking for passionate, resourceful, and committed to delivering excellent service with a strong
+            "can-do" attitude. If you are organized, reliable, and passionate about helping people, this opportunity is
+            perfect for you.</p>
+    </section>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <!-- Overview -->
+        <div class="overview">
+            <h3>Job Overview</h3>
+            <div class="overview-grid">
+                <div class="overview-item">
+                    <strong>📍 Location</strong>
+                    <span>Purok Mais, Barangay Paculob, Dumanjug, Cebu</span>
+                </div>
+                <div class="overview-item">
+                    <strong>⏰ Schedule</strong>
+                    <span>Monday–Friday, 7:00 AM - 4:00 PM PH</span>
+                </div>
+                <div class="overview-item">
+                    <strong>🚀 Start Date</strong>
+                    <span>ASAP</span>
+                </div>
+                <div class="overview-item">
+                    <strong>💼 Type</strong>
+                    <span>Full-time</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Qualifications -->
+        <div class="section-block">
+            <h3>Qualifications</h3>
+            <ul class="clean-list">
+                <li>High school graduate or college level/graduate</li>
+                <li>Strong communication and interpersonal skills</li>
+                <li>Organized, detail-oriented, and able to multitask</li>
+                <li>Basic computer proficiency (MS Office, Google Workspace, etc.)</li>
+                <li>Friendly, patient, and customer-service oriented</li>
+                <li>Able to adapt to schedule changes and shifting priorities</li>
+                <li>Reliable, professional, and willing to learn</li>
+                <li>Experience in customer service or administrative work is a plus</li>
+            </ul>
+        </div>
+
+        <!-- Responsibilities -->
+        <div class="section-block">
+            <h3>Responsibilities</h3>
+
+            <div class="resp-card">
+                <h4>📞 Customer Service</h4>
+                <ul class="clean-list">
+                    <li>Provide friendly and professional assistance to customers</li>
+                    <li>Respond to inquiries and resolve concerns promptly</li>
+                    <li>Maintain high customer satisfaction and service quality</li>
+                    <li>Deliver accurate and clear information about services</li>
+                </ul>
+            </div>
+
+            <div class="resp-card">
+                <h4>📋 Administrative & Office Support</h4>
+                <ul class="clean-list">
+                    <li>Handle administrative tasks (filing, data entry, documents)</li>
+                    <li>Assist with office communications, scheduling, coordination</li>
+                    <li>Maintain organized records and smooth office operations</li>
+                    <li>Prepare and manage documents, reports, correspondence</li>
+                    <li>Support management with daily administrative tasks</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Form -->
+    <section class="section section-light">
+        <div class="form-container">
+            <h2>Application</h2>
+
+            <form class="careers-form" id="careersForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="fullName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Preferred Working Hours</label>
+                    <div class="radio-options-vertical">
+                        <label class="radio-option">
+                            <input type="radio" name="workingHours" value="Morning Shift" required>
+                            <span class="radio-label">Morning Shift</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="workingHours" value="Night Shift">
+                            <span class="radio-label">Night Shift</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="workingHours" value="Graveyard Shift">
+                            <span class="radio-label">Graveyard Shift</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>How soon can you start?</label>
+                    <div class="radio-options-vertical">
+                        <label class="radio-option">
+                            <input type="radio" name="availability" value="Immediately" required>
+                            <span class="radio-label">Immediately</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="availability" value="Within 1 week">
+                            <span class="radio-label">Within 1 week</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="availability" value="Within 2 weeks">
+                            <span class="radio-label">Within 2 weeks</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="experience">Tell us about yourself and your experience</label>
+                    <textarea id="experience" name="experience" rows="4" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Years of experience</label>
+                    <div class="radio-options-vertical">
+                        <label class="radio-option">
+                            <input type="radio" name="yearsExperience" value="0-1 year" required>
+                            <span class="radio-label">0-1 year</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="yearsExperience" value="1-2 years">
+                            <span class="radio-label">1-2 years</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="yearsExperience" value="2-3 years">
+                            <span class="radio-label">2-3 years</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="yearsExperience" value="3+ years">
+                            <span class="radio-label">3+ years</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="resume">Resume & Portfolio</label>
+                    <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                        required>
+                    <small>PDF, Word, Excel, PNG, JPG (Max 10MB)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="whyHireYou">Why should we consider you?</label>
+                    <textarea id="whyHireYou" name="whyHireYou" rows="4" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="compensation">Expected compensation (PHP)</label>
+                    <input type="text" id="compensation" name="compensation" placeholder="e.g 15,000 - 30,000" required>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn-submit">Apply Now</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Map Section -->
+        <div class="form-container" style="margin-top: 32px;">
+            <div class="map-section">
+                <h3>Find Us &amp; Calculate Your Distance</h3>
+
+                <div class="location-options">
+                    <!-- Auto-detect -->
+                    <button id="autoDetect" class="location-btn">Auto-Detect My Location</button>
+
+                    <!-- Manual coordinates -->
+                    <div class="coord-group">
+                        <label>Latitude</label>
+                        <input type="number" id="manualLat" step="any" placeholder="Enter your latitude">
+                    </div>
+
+                    <div class="coord-group">
+                        <label>Longitude</label>
+                        <input type="number" id="manualLong" step="any" placeholder="Enter your longitude">
+                    </div>
+
+                    <button id="manualSubmit" class="location-btn btn-blue">Set Location</button>
+                </div>
+
+                <div class="map-instruction">
+                    💡 <strong>Tip:</strong> Click anywhere on the map to set your location and calculate the route!
+                </div>
+
+                <div id="map"></div>
+
+                <div class="map-info" id="routeInfo" style="display: none;">
+                    <p><strong>Distance:</strong> <span id="distance">-</span></p>
+                    <p><strong>Estimated Travel Time:</strong> <span id="duration">-</span></p>
+                    <p><strong>Your Location:</strong> <span id="userCoords">-</span></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-about">
+                    <p class="footer-description">
+                        Founded in 2025, we're a startup that partners with <strong>NDIS healthcare institutions in
+                            Australia</strong> to provide virtual administrative services, including task and calendar
+                        management, social media management, email management, and more.
+                    </p>
+                </div>
+
+                <div class="footer-info-grid">
+                    <div class="footer-column">
+                        <h4 class="footer-heading">ADDRESS</h4>
+                        <p class="footer-text">Purok Mais, Brgy Paculob Dumanjug, Cebu 6035 PHILIPPINES</p>
+                    </div>
+
+                    <div class="footer-column">
+                        <h4 class="footer-heading">CALL US</h4>
+                        <p class="footer-text">Book via Phone Call (032) 238-6354</p>
+                    </div>
+
+                    <div class="footer-column">
+                        <h4 class="footer-heading">OPENING HOURS</h4>
+                        <p class="footer-text">Monday To Friday 07:00 AM to 04:00 PM PH</p>
+                    </div>
+
+                    <div class="footer-column">
+                        <h4 class="footer-heading">FOLLOW US!</h4>
+                        <div class="social-links">
+                            <a href="https://www.facebook.com/profile.php?id=61578320660587" target="_blank"
+                                class="social-link" aria-label="Facebook">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <nav class="footer-nav">
+                    <a href="index.html">Home</a>
+                    <span class="separator">|</span>
+                    <a href="index.html#about">About Us</a>
+                    <span class="separator">|</span>
+                    <a href="index.html#contact">Contact Us</a>
+                </nav>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal -->
+    <div id="customModal" class="custom-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Notification</h3>
+                <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-message" id="modalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button" id="modalButton">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+    <script>
+
+        // Helper function to show custom modal
+        function showModal(message, title = 'Notification') {
+            const modal = document.getElementById('customModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalClose = document.getElementById('modalClose');
+            const modalButton = document.getElementById('modalButton');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modal.style.display = 'flex'; modal.classList.add('active');
+
+            const closeModal = () => {
+                modal.style.display = 'none'; modal.classList.remove('active');
+            };
+
+            modalClose.onclick = closeModal;
+            modalButton.onclick = closeModal;
+            modal.querySelector('.modal-overlay').onclick = closeModal;
+        }
+
+        // AOAS Office location
+        const aoasLocation = [10.049651, 123.448545];
+
+        // Initialize map
+        const map = L.map('map').setView(aoasLocation, 13);
+
+        // Base layers
+        const terrainLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        });
+
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles © Esri',
+            maxZoom: 19
+        });
+
+        // Add default terrain layer
+        terrainLayer.addTo(map);
+
+        // Add layer control
+        const baseLayers = {
+            "Terrain": terrainLayer,
+            "Satellite": satelliteLayer
+        };
+        L.control.layers(baseLayers).addTo(map);
+
+        // Create custom green marker for company
+        const greenIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: `<svg class="location-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#22c55e" stroke="#fff" stroke-width="1.5"/>
+                    <circle cx="12" cy="9" r="2.5" fill="#fff"/>
+                   </svg>`,
+
+            if(isNaN(lat) || isNaN(lng)) {
+                showModal('Please enter valid latitude and longitude values.', 'Invalid Input');
+        return;
+            }
+
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            showModal('Latitude must be between -90 and 90, Longitude must be between -180 and 180.', 'Invalid Coordinates');
+            return;
+        }
+
+        createRoute([lat, lng]);
+        });
+
+        // Click on map to set location
+        map.on('click', function (e) {
+            const userLocation = [e.latlng.lat, e.latlng.lng];
+            createRoute(userLocation);
+
+            // Update manual inputs
+            document.getElementById('manualLat').value = e.latlng.lat.toFixed(6);
+            document.getElementById('manualLong').value = e.latlng.lng.toFixed(6);
+        });
+    </script>
+</body>
+
+</html>

@@ -18,6 +18,11 @@
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/x-icon" href="AOAS Logo/favicon.ico">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 </head>
 
 <body>
@@ -32,13 +37,22 @@
                         <span class="logo-text-short">AOAS</span>
                     </span>
                 </div>
+                <button class="hamburger-menu" aria-label="Toggle menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
                 <div class="header-actions">
-                    <a href="https://www.facebook.com/profile.php?id=61578320660587" target="_blank" class="header-social" aria-label="Facebook">
+                    <a href="https://www.facebook.com/profile.php?id=61578320660587" target="_blank"
+                        class="header-social" aria-label="Facebook">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                            <path
+                                d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                         </svg>
+                        <span class="social-text">Facebook</span>
                     </a>
-                    <a href="#about" class="btn btn-secondary">ABOUT US</a>
+                    <a href="careers.html" class="btn btn-careers">JOIN OUR TEAM</a>
+                    <a href="#about" class="btn btn-primary">ABOUT US</a>
                     <a href="#contact" class="btn btn-primary">CONTACT US</a>
                 </div>
             </div>
@@ -68,11 +82,15 @@
                         <span class="text-highlight-green">AOAS!</span>
                     </h1>
                     <p class="hero-description">
-                        <span class="text-green">Streamline</span> your operations and <span class="text-green">increase productivity</span> with our
-                        skilled <span class="text-orange">Virtual Assistants</span>. We offer <span class="text-green">cost-effective</span>,
-                        <span class="text-green">high-quality</span> support across key areas including <span class="text-orange">administration</span>,
+                        <span class="text-green">Streamline</span> your operations and <span class="text-green">increase
+                            productivity</span> with our
+                        skilled <span class="text-orange">Virtual Assistants</span>. We offer <span
+                            class="text-green">cost-effective</span>,
+                        <span class="text-green">high-quality</span> support across key areas including <span
+                            class="text-orange">administration</span>,
                         <span class="text-orange">marketing</span>,
-                        <span class="text-orange">accounting</span>, and more. Whether you're in the <span class="text-green">NDIS sector</span>, a <span class="text-orange">trade</span>, or
+                        <span class="text-orange">accounting</span>, and more. Whether you're in the <span
+                            class="text-green">NDIS sector</span>, a <span class="text-orange">trade</span>, or
                         part of another <span class="text-green">Australian industry</span>, our VAs are trained to meet
                         your specific needs.
                     </p>
@@ -86,7 +104,8 @@
         <div class="container">
             <div class="section-header">
                 <span class="section-label">WHAT WE OFFER</span>
-                <h2 class="section-title-center">We specialize in delivering office administrative services that make a real impact.</h2>
+                <h2 class="section-title-center">We specialize in delivering office administrative services that make a
+                    real impact.</h2>
             </div>
 
             <div class="mission-vision-grid">
@@ -98,8 +117,10 @@
                                 <circle cx="30" cy="30" r="20" stroke="#2d5a3d" stroke-width="2" />
                                 <circle cx="30" cy="30" r="12" stroke="#2d5a3d" stroke-width="2" />
                                 <circle cx="30" cy="30" r="4" fill="#2d5a3d" />
-                                <path d="M30 8 L30 2 M30 52 L30 58 M8 30 L2 30 M52 30 L58 30" stroke="#2d5a3d" stroke-width="2" stroke-linecap="round" />
-                                <path d="M42 18 L48 12 M18 42 L12 48 M42 42 L48 48 M18 18 L12 12" stroke="#2d5a3d" stroke-width="2" stroke-linecap="round" />
+                                <path d="M30 8 L30 2 M30 52 L30 58 M8 30 L2 30 M52 30 L58 30" stroke="#2d5a3d"
+                                    stroke-width="2" stroke-linecap="round" />
+                                <path d="M42 18 L48 12 M18 42 L12 48 M42 42 L48 48 M18 18 L12 12" stroke="#2d5a3d"
+                                    stroke-width="2" stroke-linecap="round" />
                                 <path d="M20 15 L30 8 L40 15 L35 20 L30 15 L25 20 Z" fill="#2d5a3d" />
                             </svg>
                         </div>
@@ -109,7 +130,9 @@
                         </div>
                     </div>
                     <p class="mission-vision-description">
-                        To empower Australian businesses by providing reliable, skilled, and cost-effective virtual administrative support, enabling our clients to streamline operations, boost productivity, and achieve sustainable growth.
+                        To empower Australian businesses by providing reliable, skilled, and cost-effective virtual
+                        administrative support, enabling our clients to streamline operations, boost productivity, and
+                        achieve sustainable growth.
                     </p>
                     <ul class="mission-vision-list">
                         <li>Reliable virtual support teams</li>
@@ -133,7 +156,8 @@
                         </div>
                     </div>
                     <p class="mission-vision-description">
-                        To be the leading provider of virtual administrative services for Australian industries, recognized for our excellence and commitment to client success.
+                        To be the leading provider of virtual administrative services for Australian industries,
+                        recognized for our excellence and commitment to client success.
                     </p>
                     <ul class="mission-vision-list">
                         <li>Trusted Australian partners</li>
@@ -195,27 +219,37 @@
         <div class="container">
             <div class="section-header">
                 <span class="section-label">ABOUT US</span>
-                <h2 class="section-title">Empowering Australian Businesses with Expert Virtual Administrative Support</h2>
+                <h2 class="section-title">Empowering Australian Businesses with Expert Virtual Administrative Support
+                </h2>
             </div>
 
             <div class="about-content">
                 <div class="about-text">
                     <p class="about-description">
-                        <strong>Attainment Office Administrative Services (AOAS)</strong> is a dynamic startup founded in 2025, 
-                        dedicated to providing exceptional virtual administrative services to Australian businesses. We specialize 
-                        in partnering with <strong>NDIS healthcare institutions</strong> and various Australian industries to deliver 
+                        <strong>Attainment Office Administrative Services (AOAS)</strong> is a dynamic startup founded
+                        in 2025,
+                        dedicated to providing exceptional virtual administrative services to Australian businesses. We
+                        specialize
+                        in partnering with <strong>NDIS healthcare institutions</strong> and various Australian
+                        industries to deliver
                         comprehensive administrative solutions.
                     </p>
                     <p class="about-description">
-                        Our team of skilled Virtual Assistants is trained to handle a wide range of administrative tasks including 
-                        task and calendar management, social media management, email management, rostering, worker monitoring reports, 
-                        and more. We understand the unique requirements of Australian businesses and ensure our services align with 
+                        Our team of skilled Virtual Assistants is trained to handle a wide range of administrative tasks
+                        including
+                        task and calendar management, social media management, email management, rostering, worker
+                        monitoring reports,
+                        and more. We understand the unique requirements of Australian businesses and ensure our services
+                        align with
                         local industry standards and regulations.
                     </p>
                     <p class="about-description">
-                        At AOAS, we are committed to delivering <strong>cost-effective</strong> and <strong>high-quality</strong> 
-                        support that enables our clients to streamline operations, boost productivity, and achieve sustainable growth. 
-                        Our values of Accountability, Operational Resilience, Adaptability, and Service-Driven approach guide everything we do.
+                        At AOAS, we are committed to delivering <strong>cost-effective</strong> and
+                        <strong>high-quality</strong>
+                        support that enables our clients to streamline operations, boost productivity, and achieve
+                        sustainable growth.
+                        Our values of Accountability, Operational Resilience, Adaptability, and Service-Driven approach
+                        guide everything we do.
                     </p>
                 </div>
             </div>
@@ -248,7 +282,8 @@
                         <img src="PARTNERS/BRIGHTERLIVING.png" alt="BRIGHTER LIVING" loading="lazy" decoding="async">
                     </div>
                     <div class="partner-logo">
-                        <img src="PARTNERS/YOUMATTERSOLUTIONS.png" alt="YOU MATTER SOLUTIONS" loading="lazy" decoding="async">
+                        <img src="PARTNERS/YOUMATTERSOLUTIONS.png" alt="YOU MATTER SOLUTIONS" loading="lazy"
+                            decoding="async">
                     </div>
                 </div>
             </div>
@@ -280,10 +315,12 @@
                 <div class="why-image-carousel-wrapper">
                     <div class="why-image-carousel">
                         <div class="why-image-slide active">
-                            <img src="PROFESSIONAL EXCELLENCE/PROFESSIONALEXCELLENCE1.png" alt="Professional Excellence 1">
+                            <img src="PROFESSIONAL EXCELLENCE/PROFESSIONALEXCELLENCE1.png"
+                                alt="Professional Excellence 1">
                         </div>
                         <div class="why-image-slide">
-                            <img src="PROFESSIONAL EXCELLENCE/PROFESSIONALEXCELLENCE2.png" alt="Professional Excellence 2">
+                            <img src="PROFESSIONAL EXCELLENCE/PROFESSIONALEXCELLENCE2.png"
+                                alt="Professional Excellence 2">
                         </div>
                     </div>
                 </div>
@@ -307,8 +344,10 @@
                             <span class="faq-icon">▼</span>
                         </button>
                         <div class="faq-answer">
-                            <p>Yes, absolutely! Our commitment is to get back to you promptly within 24-48 hours from the
-                                time of your inquiry. Your time is valuable, and we strive to provide swift and efficient
+                            <p>Yes, absolutely! Our commitment is to get back to you promptly within 24-48 hours from
+                                the
+                                time of your inquiry. Your time is valuable, and we strive to provide swift and
+                                efficient
                                 communication.</p>
                         </div>
                     </div>
@@ -319,8 +358,10 @@
                             <span class="faq-icon">▼</span>
                         </button>
                         <div class="faq-answer">
-                            <p>We provide comprehensive virtual administrative services including administration, marketing
-                                support, accounting assistance, NDIS-specific support, rostering, worker monitoring reports,
+                            <p>We provide comprehensive virtual administrative services including administration,
+                                marketing
+                                support, accounting assistance, NDIS-specific support, rostering, worker monitoring
+                                reports,
                                 and general business administrative tasks.</p>
                         </div>
                     </div>
@@ -331,9 +372,12 @@
                             <span class="faq-icon">▼</span>
                         </button>
                         <div class="faq-answer">
-                            <p>We have a rigorous recruitment process and provide comprehensive training to all our Virtual Assistants. 
-                                Our team is experienced in Australian industry standards and NDIS requirements. We also conduct regular 
-                                quality checks and performance monitoring to ensure consistent, high-quality service delivery.</p>
+                            <p>We have a rigorous recruitment process and provide comprehensive training to all our
+                                Virtual Assistants.
+                                Our team is experienced in Australian industry standards and NDIS requirements. We also
+                                conduct regular
+                                quality checks and performance monitoring to ensure consistent, high-quality service
+                                delivery.</p>
                         </div>
                     </div>
                 </div>
@@ -345,8 +389,10 @@
                             <span class="faq-icon">▼</span>
                         </button>
                         <div class="faq-answer">
-                            <p>While we specialize in NDIS healthcare institutions, we also serve various Australian industries including 
-                                trades, retail, professional services, and more. Our Virtual Assistants are trained to adapt to different 
+                            <p>While we specialize in NDIS healthcare institutions, we also serve various Australian
+                                industries including
+                                trades, retail, professional services, and more. Our Virtual Assistants are trained to
+                                adapt to different
                                 industry requirements and business needs.</p>
                         </div>
                     </div>
@@ -357,9 +403,12 @@
                             <span class="faq-icon">▼</span>
                         </button>
                         <div class="faq-answer">
-                            <p>We handle the entire recruitment process for you - from sourcing candidates to conducting interviews and 
-                                background checks. Once you approve a candidate, we manage all HR and payroll aspects. There are zero 
-                                recruitment fees, and we ensure all staff work within your time zone for seamless collaboration.</p>
+                            <p>We handle the entire recruitment process for you - from sourcing candidates to conducting
+                                interviews and
+                                background checks. Once you approve a candidate, we manage all HR and payroll aspects.
+                                There are zero
+                                recruitment fees, and we ensure all staff work within your time zone for seamless
+                                collaboration.</p>
                         </div>
                     </div>
 
@@ -369,8 +418,10 @@
                             <span class="faq-icon">▼</span>
                         </button>
                         <div class="faq-answer">
-                            <p>Absolutely! We understand that every business has unique requirements. Our services are fully customizable 
-                                to match your specific needs, workflows, and industry standards. We work closely with you to understand 
+                            <p>Absolutely! We understand that every business has unique requirements. Our services are
+                                fully customizable
+                                to match your specific needs, workflows, and industry standards. We work closely with
+                                you to understand
                                 your goals and tailor our support accordingly.</p>
                         </div>
                     </div>
@@ -396,7 +447,8 @@
                 <div class="contact-info">
                     <span class="section-label-white">GET IN TOUCH</span>
                     <h2 class="contact-title">Ready to Streamline Your Business?</h2>
-                    <p class="contact-subtitle">Let's discuss how our Virtual Assistants can help you achieve your goals!</p>
+                    <p class="contact-subtitle">Let's discuss how our Virtual Assistants can help you achieve your
+                        goals!</p>
                 </div>
                 <div class="contact-form-wrapper">
                     <form class="contact-form" id="contactForm">
@@ -414,6 +466,49 @@
                         </div>
                         <button type="submit" class="btn btn-primary">CONTACT US</button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Map Section -->
+    <section class="section section-light">
+        <div class="container">
+            <div class="map-section-home">
+                <div class="section-header">
+                    <span class="section-label">FIND US</span>
+                    <h2 class="section-title">Find Us & Calculate Your Distance</h2>
+                    <p class="section-description">Discover how far you are from our office and get route directions</p>
+                </div>
+
+                <!-- Clean Location Form -->
+                <div class="location-form-card">
+                    <button id="autoDetectHome" class="location-btn-primary">Auto-Detect My Location</button>
+
+                    <div class="form-input-group">
+                        <label for="manualLatHome">Latitude</label>
+                        <input type="number" id="manualLatHome" step="any" placeholder="Enter your latitude">
+                    </div>
+
+                    <div class="form-input-group">
+                        <label for="manualLongHome">Longitude</label>
+                        <input type="number" id="manualLongHome" step="any" placeholder="Enter your longitude">
+                    </div>
+
+                    <button id="manualSubmitHome" class="location-btn-secondary">Set Location</button>
+                </div>
+
+                <div class="map-instruction">
+                    💡 <strong>Tip:</strong> Click anywhere on the map to set your location and calculate the route! For
+                    international locations, air distance will be displayed.
+                </div>
+
+                <div id="mapHome"></div>
+
+                <div class="map-info" id="routeInfoHome" style="display: none;">
+                    <p><strong>Distance:</strong> <span id="distanceHome">-</span></p>
+                    <p><strong>Estimated Travel Time:</strong> <span id="durationHome">-</span></p>
+                    <p><strong>Your Location:</strong> <span id="userCoordsHome">-</span></p>
                 </div>
             </div>
         </div>
@@ -449,14 +544,15 @@
                     <div class="footer-column">
                         <h4 class="footer-heading">OPENING HOURS</h4>
                         <p class="footer-text">
-                            Monday To Friday 07:00 AM to 03:00 PM PH
+                            Monday To Friday 07:00 AM to 04:00 PM PH
                         </p>
                     </div>
 
                     <div class="footer-column">
                         <h4 class="footer-heading">FOLLOW US!</h4>
                         <div class="social-links">
-                            <a href="https://www.facebook.com/profile.php?id=61578320660587" target="_blank" class="social-link" aria-label="Facebook">
+                            <a href="https://www.facebook.com/profile.php?id=61578320660587" target="_blank"
+                                class="social-link" aria-label="Facebook">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                     <path
                                         d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -473,7 +569,7 @@
                     <span class="separator">|</span>
                     <a href="#about">About Us</a>
                     <span class="separator">|</span>
-                    <a href="#contact">Contact Us</a>
+                    <a href="careers.html">Join Our Team</a>
                 </nav>
             </div>
         </div>
@@ -497,6 +593,296 @@
     </div>
 
     <script src="script.js"></script>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+    <script>
+
+        // Helper function to show custom modal
+        function showModalHome(message, title = 'Notification') {
+            const modal = document.getElementById('customModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalClose = document.getElementById('modalClose');
+            const modalButton = document.getElementById('modalButton');
+
+            if (!modal) {
+                console.error('Modal not found');
+                return;
+            }
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modal.style.display = 'flex'; modal.classList.add('active');
+
+            const closeModal = () => {
+                modal.style.display = 'none'; modal.classList.remove('active');
+            };
+
+            modalClose.onclick = closeModal;
+            modalButton.onclick = closeModal;
+            modal.querySelector('.modal-overlay').onclick = closeModal;
+        }
+
+        // AOAS Office location
+        const aoasLocationHome = [10.049651, 123.448545];
+
+        // Initialize map
+        const mapHome = L.map('mapHome').setView(aoasLocationHome, 13);
+
+        // Base layers
+        const terrainLayerHome = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        });
+
+        const satelliteLayerHome = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles © Esri',
+            maxZoom: 19
+        });
+
+        // Add default terrain layer
+        terrainLayerHome.addTo(mapHome);
+
+        // Add layer control
+        const baseLayersHome = {
+            "Terrain": terrainLayerHome,
+            "Satellite": satelliteLayerHome
+        };
+        L.control.layers(baseLayersHome).addTo(mapHome);
+
+        // Create custom green marker for company
+        const greenIconHome = L.divIcon({
+            className: 'custom-div-icon',
+            html: `<svg class="location-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#22c55e" stroke="#fff" stroke-width="1.5"/>
+                    <circle cx="12" cy="9" r="2.5" fill="#fff"/>
+                   </svg>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            popupAnchor: [0, -40]
+        });
+
+        // Add AOAS office marker
+        const officeMarkerHome = L.marker(aoasLocationHome, { icon: greenIconHome }).addTo(mapHome);
+        officeMarkerHome.bindPopup('<strong>🏢 AOAS Office</strong><br>Purok Mais, Barangay Paculob<br>Dumanjug, Cebu').openPopup();
+
+        // Variables
+        let routingControlHome = null;
+        let userMarkerHome = null;
+
+        // Function to calculate straight-line distance using Haversine formula
+        function calculateStraightLineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in kilometers
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c;
+            return distance;
+        }
+
+        // Function to create route
+        function createRouteHome(userLocation) {
+            // Remove existing route
+            if (routingControlHome) {
+                mapHome.removeControl(routingControlHome);
+            }
+
+            // Remove existing user marker
+            if (userMarkerHome) {
+                mapHome.removeLayer(userMarkerHome);
+            }
+
+            // Create orange marker for user
+            const orangeIconHome = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<svg class="location-pin location-pin-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#FF6D1F" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="12" cy="9" r="2.5" fill="#fff"/>
+                       </svg>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+
+            // Add user marker
+            userMarkerHome = L.marker(userLocation, { icon: orangeIconHome }).addTo(mapHome);
+            userMarkerHome.bindPopup('<strong>📍 Your Location</strong>');
+
+            // Calculate straight-line distance first
+            const straightLineDistance = calculateStraightLineDistance(
+                userLocation[0], userLocation[1],
+                aoasLocationHome[0], aoasLocationHome[1]
+            );
+
+            // Flag to track if routing succeeded
+            let routingSucceeded = false;
+            let routingTimeout;
+
+            // Set a timeout to show straight-line distance if routing takes too long or fails
+            routingTimeout = setTimeout(() => {
+                if (!routingSucceeded) {
+                    // Show straight-line distance as fallback
+                    document.getElementById('distanceHome').innerHTML = `${straightLineDistance.toFixed(2)} km <span style="font-size: 0.85em; color: #666;">(air distance)</span>`;
+                    document.getElementById('durationHome').textContent = 'Road routing not available';
+                    document.getElementById('userCoordsHome').textContent = `${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`;
+                    document.getElementById('routeInfoHome').style.display = 'block';
+
+                    // Draw a dashed line to show straight-line distance
+                    if (window.straightLineHome) {
+                        mapHome.removeLayer(window.straightLineHome);
+                    }
+                    window.straightLineHome = L.polyline([userLocation, aoasLocationHome], {
+                        color: '#FF6D1F',
+                        weight: 3,
+                        opacity: 0.6,
+                        dashArray: '10, 10'
+                    }).addTo(mapHome);
+
+                    // Fit bounds to show both markers
+                    mapHome.fitBounds([userLocation, aoasLocationHome], { padding: [50, 50] });
+                }
+            }, 3000); // Wait 3 seconds for routing
+
+            // Try to create routing
+            routingControlHome = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLocation[0], userLocation[1]),
+                    L.latLng(aoasLocationHome[0], aoasLocationHome[1])
+                ],
+                lineOptions: {
+                    styles: [{ color: '#FF6D1F', opacity: 0.8, weight: 6 }]
+                },
+                createMarker: function () { return null; },
+                routeWhileDragging: false,
+                showAlternatives: false,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: true
+            }).addTo(mapHome);
+
+            // Handle route found
+            routingControlHome.on('routesfound', function (e) {
+                routingSucceeded = true;
+                clearTimeout(routingTimeout);
+
+                // Remove straight line if it exists
+                if (window.straightLineHome) {
+                    mapHome.removeLayer(window.straightLineHome);
+                }
+
+                const routes = e.routes;
+                const summary = routes[0].summary;
+
+                const distanceKm = (summary.totalDistance / 1000).toFixed(2);
+                const totalMinutes = Math.round(summary.totalTime / 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                const timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes} minutes`;
+
+                document.getElementById('distanceHome').innerHTML = `${distanceKm} km <span style="font-size: 0.85em; color: #666;">(by road)</span>`;
+                document.getElementById('durationHome').textContent = timeString;
+                document.getElementById('userCoordsHome').textContent = `${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`;
+                document.getElementById('routeInfoHome').style.display = 'block';
+            });
+
+            // Handle routing error
+            routingControlHome.on('routingerror', function (e) {
+                routingSucceeded = true; // Mark as handled
+                clearTimeout(routingTimeout);
+
+                // Show straight-line distance when routing fails
+                document.getElementById('distanceHome').innerHTML = `${straightLineDistance.toFixed(2)} km <span style="font-size: 0.85em; color: #666;">(air distance)</span>`;
+                document.getElementById('durationHome').textContent = 'Road routing not available';
+                document.getElementById('userCoordsHome').textContent = `${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`;
+                document.getElementById('routeInfoHome').style.display = 'block';
+
+                // Draw a dashed line to show straight-line distance
+                if (window.straightLineHome) {
+                    mapHome.removeLayer(window.straightLineHome);
+                }
+                window.straightLineHome = L.polyline([userLocation, aoasLocationHome], {
+                    color: '#FF6D1F',
+                    weight: 3,
+                    opacity: 0.6,
+                    dashArray: '10, 10'
+                }).addTo(mapHome);
+
+                // Fit bounds to show both markers
+                mapHome.fitBounds([userLocation, aoasLocationHome], { padding: [50, 50] });
+            });
+        }
+
+        // Auto-detect location
+        document.getElementById('autoDetectHome').addEventListener('click', function () {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = '📍 Detecting...';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        const userLocation = [position.coords.latitude, position.coords.longitude];
+                        createRouteHome(userLocation);
+                        btn.textContent = '✓ Location Detected';
+                        btn.style.background = '#22c55e';
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.textContent = '🔄 Refresh Location';
+                            btn.style.background = '#FF6D1F';
+                        }, 2000);
+                    },
+                    function (error) {
+                        btn.disabled = false;
+                        btn.textContent = '❌ Access Denied';
+                        btn.style.background = '#ef4444';
+                        showModalHome('Please enable location access in your browser settings.', 'Location Access Required');
+                        setTimeout(() => {
+                            btn.textContent = '📍 Auto-Detect My Location';
+                            btn.style.background = '#FF6D1F';
+                        }, 3000);
+                    }
+                );
+            } else {
+                btn.disabled = false;
+                showModalHome('Geolocation is not supported by your browser.', 'Feature Not Supported');
+            }
+        });
+
+        // Manual coordinate input
+        document.getElementById('manualSubmitHome').addEventListener('click', function () {
+            const lat = parseFloat(document.getElementById('manualLatHome').value);
+            const lng = parseFloat(document.getElementById('manualLongHome').value);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                showModalHome('Please enter valid latitude and longitude values.', 'Invalid Input');
+                return;
+            }
+
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                showModalHome('Latitude must be between -90 and 90, Longitude must be between -180 and 180.', 'Invalid Coordinates');
+                return;
+            }
+
+            createRouteHome([lat, lng]);
+        });
+
+        // Click on map to set location
+        mapHome.on('click', function (e) {
+            const userLocation = [e.latlng.lat, e.latlng.lng];
+            createRouteHome(userLocation);
+
+            // Update manual inputs
+            document.getElementById('manualLatHome').value = e.latlng.lat.toFixed(6);
+            document.getElementById('manualLongHome').value = e.latlng.lng.toFixed(6);
+        });
+    </script>
 </body>
 
 </html>

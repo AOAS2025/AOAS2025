@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Typing Animation for Hero Description Only
     const heroTitle = document.querySelector('.hero-title');
     const heroDescription = document.querySelector('.hero-description');
-    
+
     if (heroTitle) {
         // Title fades in smoothly
         heroTitle.style.opacity = '0';
@@ -37,14 +37,14 @@ document.addEventListener('DOMContentLoaded', function () {
             heroTitle.style.opacity = '1';
         }, 200);
     }
-    
+
     if (heroDescription) {
         // Description has typing animation
         // Store the original HTML structure
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = heroDescription.innerHTML;
         const textNodes = [];
-        
+
         // Extract text content while preserving HTML structure
         function extractText(node, parentTag = '') {
             if (node.nodeType === Node.TEXT_NODE) {
@@ -57,42 +57,42 @@ document.addEventListener('DOMContentLoaded', function () {
                 const tagName = node.tagName.toLowerCase();
                 const openTag = `<${tagName}${node.className ? ` class="${node.className}"` : ''}>`;
                 const closeTag = `</${tagName}>`;
-                
+
                 textNodes.push({
                     type: 'openTag',
                     content: openTag
                 });
-                
+
                 Array.from(node.childNodes).forEach(child => {
                     extractText(child, tagName);
                 });
-                
+
                 textNodes.push({
                     type: 'closeTag',
                     content: closeTag
                 });
             }
         }
-        
+
         Array.from(tempDiv.childNodes).forEach(node => {
             extractText(node);
         });
-        
+
         // Clear the description
         heroDescription.innerHTML = '';
         heroDescription.style.opacity = '1';
-        
+
         let nodeIndex = 0;
         let charIndex = 0;
         const typingSpeed = 20; // milliseconds per character
-        
+
         function typeNext() {
             if (nodeIndex >= textNodes.length) {
                 return;
             }
 
             const currentNode = textNodes[nodeIndex];
-            
+
             if (currentNode.type === 'openTag' || currentNode.type === 'closeTag') {
                 heroDescription.innerHTML += currentNode.content;
                 nodeIndex++;
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return typeNext();
             }
         }
-        
+
         // Start typing after title appears
         setTimeout(() => {
             typeNext();
@@ -147,16 +147,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function animateTextWriting(element, delay = 0) {
         if (!element) return;
-        
+
         const originalText = element.innerHTML;
         element.innerHTML = '';
         element.style.opacity = '1';
-        
+
         // Extract text content while preserving HTML structure
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = originalText;
         const textNodes = [];
-        
+
         function extractText(node) {
             if (node.nodeType === Node.TEXT_NODE) {
                 textNodes.push({
@@ -167,38 +167,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 const tagName = node.tagName.toLowerCase();
                 const openTag = `<${tagName}${node.className ? ` class="${node.className}"` : ''}>`;
                 const closeTag = `</${tagName}>`;
-                
+
                 textNodes.push({
                     type: 'openTag',
                     content: openTag
                 });
-                
+
                 Array.from(node.childNodes).forEach(child => {
                     extractText(child);
                 });
-                
+
                 textNodes.push({
                     type: 'closeTag',
                     content: closeTag
                 });
             }
         }
-        
+
         Array.from(tempDiv.childNodes).forEach(node => {
             extractText(node);
         });
-        
+
         let nodeIndex = 0;
         let charIndex = 0;
         const typingSpeed = 15; // milliseconds per character
-        
+
         function typeNext() {
             if (nodeIndex >= textNodes.length) {
                 return;
             }
 
             const currentNode = textNodes[nodeIndex];
-            
+
             if (currentNode.type === 'openTag' || currentNode.type === 'closeTag') {
                 element.innerHTML += currentNode.content;
                 nodeIndex++;
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return typeNext();
             }
         }
-        
+
         setTimeout(() => {
             typeNext();
         }, delay);
@@ -234,12 +234,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (card) {
                     const description = card.querySelector('.mission-vision-description');
                     const list = card.querySelector('.mission-vision-list');
-                    
+
                     if (description && !description.dataset.animated) {
                         description.dataset.animated = 'true';
                         animateTextWriting(description, index * 300);
                     }
-                    
+
                     if (list && !list.dataset.animated) {
                         list.dataset.animated = 'true';
                         const listItems = list.querySelectorAll('li');
@@ -308,38 +308,38 @@ document.addEventListener('DOMContentLoaded', function () {
         message: document.getElementById('modalMessage'),
         button: document.getElementById('modalButton'),
         close: document.getElementById('modalClose'),
-        
-        show: function(title, message, type = 'success') {
+
+        show: function (title, message, type = 'success') {
             this.title.textContent = title;
             this.message.textContent = message;
             this.modal.className = `custom-modal ${type} active`;
-            
+
             // Focus management
             this.button.focus();
         },
-        
-        hide: function() {
+
+        hide: function () {
             this.modal.classList.remove('active');
         },
-        
-        init: function() {
+
+        init: function () {
             const self = this;
-            
+
             // Close on button click
             this.button.addEventListener('click', () => {
                 self.hide();
             });
-            
+
             // Close on X button click
             this.close.addEventListener('click', () => {
                 self.hide();
             });
-            
+
             // Close on overlay click
             this.modal.querySelector('.modal-overlay').addEventListener('click', () => {
                 self.hide();
             });
-            
+
             // Close on Escape key
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && this.modal.classList.contains('active')) {
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     };
-    
+
     // Initialize modal
     customModal.init();
 
@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                     ? 'http://localhost:3000/api/contact'
                     : '/api/contact';
-                
+
                 // Send form data to backend
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -410,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     } catch {
                         errorData = { error: `Server error: ${response.status} ${response.statusText}` };
                     }
-                    
+
                     // Show specific error message from server
                     const errorMessage = errorData.error || `Server error: ${response.status}`;
                     throw new Error(errorMessage);
@@ -420,34 +420,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (data.success) {
                     customModal.show(
-                        'Message Sent!', 
+                        'Message Sent!',
                         data.message || 'Thank you for your message! We will get back to you within 24-48 hours.',
                         'success'
                     );
                     contactForm.reset();
                 } else {
                     customModal.show(
-                        'Error', 
+                        'Error',
                         data.error || 'Failed to send message. Please try again later.',
                         'error'
                     );
                 }
             } catch (error) {
                 console.error('Error submitting form:', error);
-                
+
                 // Check if it's a network error (server not running)
-                if (error.message.includes('Failed to fetch') || 
-                    error.message.includes('NetworkError') || 
+                if (error.message.includes('Failed to fetch') ||
+                    error.message.includes('NetworkError') ||
                     error.message.includes('ERR_CONNECTION_REFUSED') ||
                     error.name === 'TypeError') {
                     customModal.show(
-                        'Server Not Running', 
+                        'Server Not Running',
                         'Please make sure the server is running.\n\n1. Install Node.js from https://nodejs.org/\n2. Close and reopen your terminal\n3. Run: npm install\n4. Run: npm start\n\nOr double-click START_SERVER.bat file.',
                         'error'
                     );
                 } else {
                     customModal.show(
-                        'Error', 
+                        'Error',
                         error.message || 'An error occurred while sending your message. Please try again later.',
                         'error'
                     );
@@ -557,7 +557,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
             });
-        }, { 
+        }, {
             threshold: 0.1,
             rootMargin: '0px 0px -100px 0px'
         });
@@ -634,13 +634,79 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
             });
-        }, { 
+        }, {
             threshold: 0.15,
             rootMargin: '0px 0px -100px 0px'
         });
 
         contactObserver.observe(contactSection);
     }
+
+
+    // Map Section Micro Animations
+    const mapSection = document.querySelector('.map-section-home');
+    if (mapSection) {
+        const mapHeader = mapSection.querySelector('.section-header');
+        const locationForm = mapSection.querySelector('.location-form-card');
+        const mapInstruction = mapSection.querySelector('.map-instruction');
+        const mapContainer = mapSection.querySelector('#mapHome');
+
+        // Initialize Map section elements
+        if (mapHeader) {
+            mapHeader.style.opacity = '0';
+            mapHeader.style.transform = 'translateY(30px)';
+            mapHeader.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+        }
+        if (locationForm) {
+            locationForm.style.opacity = '0';
+            locationForm.style.transform = 'translateY(40px)';
+            locationForm.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s';
+        }
+        if (mapInstruction) {
+            mapInstruction.style.opacity = '0';
+            mapInstruction.style.transform = 'translateY(20px)';
+            mapInstruction.style.transition = 'opacity 0.6s ease-out 0.4s, transform 0.6s ease-out 0.4s';
+        }
+        if (mapContainer) {
+            mapContainer.style.opacity = '0';
+            mapContainer.style.transform = 'translateY(40px) scale(0.98)';
+            mapContainer.style.transition = 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1) 0.5s, transform 1s cubic-bezier(0.4, 0, 0.2, 1) 0.5s';
+        }
+
+        // Create observer for Map section
+        const mapObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    if (mapHeader && !mapHeader.classList.contains('animate-in')) {
+                        mapHeader.classList.add('animate-in');
+                        mapHeader.style.opacity = '1';
+                        mapHeader.style.transform = 'translateY(0)';
+                    }
+                    if (locationForm && !locationForm.classList.contains('animate-in')) {
+                        locationForm.classList.add('animate-in');
+                        locationForm.style.opacity = '1';
+                        locationForm.style.transform = 'translateY(0)';
+                    }
+                    if (mapInstruction && !mapInstruction.classList.contains('animate-in')) {
+                        mapInstruction.classList.add('animate-in');
+                        mapInstruction.style.opacity = '1';
+                        mapInstruction.style.transform = 'translateY(0)';
+                    }
+                    if (mapContainer && !mapContainer.classList.contains('animate-in')) {
+                        mapContainer.classList.add('animate-in');
+                        mapContainer.style.opacity = '1';
+                        mapContainer.style.transform = 'translateY(0) scale(1)';
+                    }
+                }
+            });
+        }, {
+            threshold: 0.15,
+            rootMargin: '0px 0px -100px 0px'
+        });
+
+        mapObserver.observe(mapSection);
+    }
+
 
     // Footer Section Micro Animations
     const footer = document.querySelector('.footer');
@@ -649,20 +715,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const footerColumns = footer.querySelectorAll('.footer-column');
         const footerNav = footer.querySelector('.footer-nav');
 
-        // Initialize Footer elements
+        // Initialize Footer elements - kept visible for reliability
         if (footerDescription) {
-            footerDescription.style.opacity = '0';
-            footerDescription.style.transform = 'translateY(30px)';
+            // footerDescription.style.opacity = '0';
+            // footerDescription.style.transform = 'translateY(30px)';
             footerDescription.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
         }
         footerColumns.forEach((column, index) => {
-            column.style.opacity = '0';
-            column.style.transform = 'translateY(30px)';
+            // column.style.opacity = '0';
+            // column.style.transform = 'translateY(30px)';
             column.style.transition = `opacity 0.7s ease-out ${0.2 + (index * 0.1)}s, transform 0.7s ease-out ${0.2 + (index * 0.1)}s`;
         });
         if (footerNav) {
-            footerNav.style.opacity = '0';
-            footerNav.style.transform = 'translateY(20px)';
+            // footerNav.style.opacity = '0';
+            // footerNav.style.transform = 'translateY(20px)';
             footerNav.style.transition = 'opacity 0.6s ease-out 0.8s, transform 0.6s ease-out 0.8s';
         }
 
@@ -689,7 +755,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             });
-        }, { 
+        }, {
             threshold: 0.2,
             rootMargin: '0px 0px -50px 0px'
         });
@@ -776,5 +842,465 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         initializePartnersCarousel();
+    }
+});
+
+// Careers Form Handling
+document.addEventListener('DOMContentLoaded', function () {
+    const careersForm = document.getElementById('careersForm');
+
+    if (!careersForm) return; // Exit if not on careers page
+
+    // Form submission handler
+    careersForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        // Get form values
+        const fullName = document.getElementById('fullName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const workingHours = document.querySelector('input[name="workingHours"]:checked')?.value;
+        const availability = document.querySelector('input[name="availability"]:checked')?.value;
+        const experience = document.getElementById('experience').value.trim();
+        const yearsExperience = document.querySelector('input[name="yearsExperience"]:checked')?.value;
+        const resumeFile = document.getElementById('resume').files[0];
+        const whyHireYou = document.getElementById('whyHireYou').value.trim();
+        const compensation = document.getElementById('compensation').value.trim();
+
+        // Get modal from main page
+        const customModal = {
+            modal: document.getElementById('customModal'),
+            title: document.getElementById('modalTitle'),
+            message: document.getElementById('modalMessage'),
+            button: document.getElementById('modalButton'),
+
+            show: function (title, message, type = 'success') {
+                this.title.textContent = title;
+                this.message.textContent = message;
+                this.modal.className = `custom-modal ${type} active`;
+                this.button.focus();
+            },
+
+            hide: function () {
+                this.modal.classList.remove('active');
+            }
+        };
+
+        // Validation
+        if (!fullName || !email || !phone) {
+            customModal.show('Required Fields', 'Please fill in your full name, email, and phone number.', 'error');
+            return;
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            customModal.show('Invalid Email', 'Please enter a valid email address.', 'error');
+            return;
+        }
+
+        // Check if working hours is selected
+        if (!workingHours) {
+            customModal.show('Required Selection', 'Please select your preferred working hours.', 'error');
+            return;
+        }
+
+        // Check if availability is selected
+        if (!availability) {
+            customModal.show('Required Selection', 'Please select when you can start.', 'error');
+            return;
+        }
+
+        // Check if experience is provided
+        if (!experience) {
+            customModal.show('Required Field', 'Please tell us about your experience as a Virtual Assistant.', 'error');
+            return;
+        }
+
+        // Check if years of experience is selected
+        if (!yearsExperience) {
+            customModal.show('Required Selection', 'Please select your years of experience.', 'error');
+            return;
+        }
+
+        // Check if resume file is provided
+        if (!resumeFile) {
+            customModal.show('Required Field', 'Please upload your resume/portfolio file.', 'error');
+            return;
+        }
+
+        // Validate file size (10MB max)
+        const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
+        if (resumeFile.size > maxFileSize) {
+            customModal.show('File Too Large', 'Resume file must be smaller than 10MB. Please compress or use a different file.', 'error');
+            return;
+        }
+
+        // Validate file type
+        const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'image/png',
+            'image/jpeg',
+            'image/jpg'
+        ];
+        if (!allowedTypes.includes(resumeFile.type)) {
+            customModal.show('Invalid File Type', 'Please upload a PDF, Word, Excel, PNG, or JPG file.', 'error');
+            return;
+        }
+
+        // Check if "why hire you" is provided
+        if (!whyHireYou) {
+            customModal.show('Required Field', 'Please tell us why we should consider you for this role.', 'error');
+            return;
+        }
+
+        // Check if compensation is provided
+        if (!compensation) {
+            customModal.show('Required Field', 'Please provide your expected compensation.', 'error');
+            return;
+        }
+
+
+        // Disable submit button and show loading state
+        const submitButton = careersForm.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'UPLOADING...';
+
+        try {
+            // Convert file to base64
+            const fileReader = new FileReader();
+            const fileData = await new Promise((resolve, reject) => {
+                fileReader.onload = () => resolve(fileReader.result);
+                fileReader.onerror = () => reject(new Error('Failed to read file'));
+                fileReader.readAsDataURL(resumeFile);
+            });
+
+            // Determine API URL
+            const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'http://localhost:3000/api/careers'
+                : '/api/careers';
+
+            // Send form data to backend
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    fullName,
+                    email,
+                    phone,
+                    workingHours,
+                    availability,
+                    experience,
+                    yearsExperience,
+                    resume: fileData,
+                    resumeFileName: resumeFile.name,
+                    resumeFileType: resumeFile.type,
+                    whyHireYou,
+                    compensation
+                })
+            });
+
+            // Check if response is ok
+            if (!response.ok) {
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch {
+                    errorData = { error: `Server error: ${response.status} ${response.statusText}` };
+                }
+
+                const errorMessage = errorData.error || `Server error: ${response.status}`;
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                customModal.show(
+                    'Application Submitted!',
+                    data.message || 'Thank you for your application! We will review your submission and get back to you soon.',
+                    'success'
+                );
+
+                // Reset form
+                careersForm.reset();
+
+                // Clear button selections
+                document.querySelectorAll('.option-button.selected').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+
+                // Redirect to home page after 3 seconds
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 3000);
+            } else {
+                customModal.show(
+                    'Error',
+                    data.error || 'Failed to submit application. Please try again later.',
+                    'error'
+                );
+            }
+        } catch (error) {
+            console.error('Error submitting form:', error);
+
+            // Check if it's a network error
+            if (error.message.includes('Failed to fetch') ||
+                error.message.includes('NetworkError') ||
+                error.message.includes('ERR_CONNECTION_REFUSED') ||
+                error.name === 'TypeError') {
+                customModal.show(
+                    'Server Not Running',
+                    'Please make sure the server is running.\n\n1. Install Node.js from https://nodejs.org/\n2. Close and reopen your terminal\n3. Run: npm install\n4. Run: npm start',
+                    'error'
+                );
+            } else {
+                customModal.show(
+                    'Error',
+                    error.message || 'An error occurred while submitting your application. Please try again later.',
+                    'error'
+                );
+            }
+        } finally {
+            // Re-enable submit button
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+        }
+    });
+});
+
+// Hamburger Menu Functionality
+document.addEventListener('DOMContentLoaded', function () {
+    const hamburger = document.querySelector('.hamburger-menu');
+    const navMenu = document.querySelector('.header-actions');
+
+    if (hamburger && navMenu) {
+        hamburger.addEventListener('click', function () {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function (event) {
+            if (!hamburger.contains(event.target) && !navMenu.contains(event.target)) {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+            }
+        });
+
+        // Close menu when clicking a link
+        const navLinks = navMenu.querySelectorAll('a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+            });
+        });
+    }
+});
+
+
+
+
+// Careers Page Micro Animations (Refactored)
+document.addEventListener('DOMContentLoaded', function () {
+    const careersPage = document.querySelector('.hero-minimal'); // Check if we are on careers page
+    if (careersPage) {
+        console.log('Careers page detected, initializing animations...');
+
+        // Helper function to setup animation
+        const setupAnimation = (element, delay = 0, type = 'reveal-on-scroll') => {
+            if (element) {
+                element.classList.add(type);
+                if (delay > 0) {
+                    element.style.transitionDelay = `${delay}s`;
+                }
+            }
+        };
+
+        // Hero Section
+        const heroTitle = document.querySelector('.hero-minimal h1');
+        const heroSubtitle = document.querySelector('.hero-minimal h2');
+        const heroDesc = document.querySelector('.hero-minimal p');
+
+        setupAnimation(heroTitle, 0);
+        setupAnimation(heroSubtitle, 0.2);
+
+        // Typewriter Setup for Description
+        let typeWriterFunc = null;
+        if (heroDesc) {
+            // Store the original HTML structure
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = heroDesc.innerHTML;
+            const textNodes = [];
+
+            // Extract text content while preserving HTML structure
+            function extractText(node, parentTag = '') {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    textNodes.push({
+                        type: 'text',
+                        content: node.textContent,
+                        parentTag: parentTag
+                    });
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = node.tagName.toLowerCase();
+                    const openTag = `<${tagName}${node.className ? ` class="${node.className}"` : ''}>`;
+                    const closeTag = `</${tagName}>`;
+
+                    textNodes.push({
+                        type: 'openTag',
+                        content: openTag
+                    });
+
+                    Array.from(node.childNodes).forEach(child => {
+                        extractText(child, tagName);
+                    });
+
+                    textNodes.push({
+                        type: 'closeTag',
+                        content: closeTag
+                    });
+                }
+            }
+
+            Array.from(tempDiv.childNodes).forEach(node => {
+                extractText(node);
+            });
+
+            // Clear the description initially
+            heroDesc.innerHTML = '';
+            heroDesc.style.opacity = '1'; // Keep visible for typing
+
+            let nodeIndex = 0;
+            let charIndex = 0;
+            const typingSpeed = 15;
+
+            typeWriterFunc = function () {
+                if (nodeIndex >= textNodes.length) return;
+
+                const currentNode = textNodes[nodeIndex];
+
+                if (currentNode.type === 'openTag' || currentNode.type === 'closeTag') {
+                    heroDesc.innerHTML += currentNode.content;
+                    nodeIndex++;
+                    typeWriterFunc();
+                    return;
+                }
+
+                if (currentNode.type === 'text') {
+                    if (charIndex < currentNode.content.length) {
+                        heroDesc.innerHTML += currentNode.content[charIndex];
+                        charIndex++;
+                        setTimeout(typeWriterFunc, typingSpeed);
+                    } else {
+                        charIndex = 0;
+                        nodeIndex++;
+                        typeWriterFunc();
+                    }
+                } else {
+                    nodeIndex++;
+                    typeWriterFunc();
+                }
+            };
+        }
+
+        // Job Overview
+        const overviewSection = document.querySelector('.overview');
+        const overviewItems = document.querySelectorAll('.overview-item');
+
+        if (overviewSection) {
+            const overviewTitle = overviewSection.querySelector('h3');
+            setupAnimation(overviewTitle, 0);
+
+            overviewItems.forEach((item, index) => {
+                setupAnimation(item, 0.2 + (index * 0.1));
+            });
+        }
+
+        // Section Blocks (Qualifications & Responsibilities)
+        const sectionBlocks = document.querySelectorAll('.section-block');
+        sectionBlocks.forEach(block => {
+            const title = block.querySelector('h3');
+            const listItems = block.querySelectorAll('li');
+            const cards = block.querySelectorAll('.resp-card');
+
+            setupAnimation(title, 0);
+
+            listItems.forEach((item, index) => {
+                setupAnimation(item, 0.2 + (index * 0.05), 'reveal-on-scroll-left');
+            });
+
+            cards.forEach((card, index) => {
+                setupAnimation(card, 0.2 + (index * 0.2));
+            });
+        });
+
+        // Application Form
+        const formContainer = document.querySelector('.form-container'); // First one is application form
+        setupAnimation(formContainer, 0.2);
+
+        // Map Section on Careers Page
+        const mapSectionCareers = document.querySelector('.map-section');
+        if (mapSectionCareers) {
+            const mapContainerParent = mapSectionCareers.closest('.form-container');
+            if (mapContainerParent && mapContainerParent !== formContainer) {
+                setupAnimation(mapContainerParent, 0.2);
+            }
+        }
+
+        // Observer for Careers Page
+        const careersObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Add is-visible class to trigger animation
+                    if (entry.target.classList.contains('reveal-on-scroll') || entry.target.classList.contains('reveal-on-scroll-left')) {
+                        entry.target.classList.add('is-visible');
+                    }
+
+                    // Typewriter Trigger
+                    if (entry.target === heroDesc) {
+                        if (typeWriterFunc && !heroDesc.dataset.typingStarted) {
+                            heroDesc.dataset.typingStarted = 'true';
+                            typeWriterFunc();
+                        }
+                    }
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        // Observe elements
+        if (heroTitle) careersObserver.observe(heroTitle);
+        if (heroSubtitle) careersObserver.observe(heroSubtitle);
+        if (heroDesc) careersObserver.observe(heroDesc);
+
+        if (overviewSection) {
+            const overviewTitle = overviewSection.querySelector('h3');
+            if (overviewTitle) careersObserver.observe(overviewTitle);
+            overviewItems.forEach(item => careersObserver.observe(item));
+        }
+
+        sectionBlocks.forEach(block => {
+            const title = block.querySelector('h3');
+            if (title) careersObserver.observe(title);
+
+            const listItems = block.querySelectorAll('li');
+            listItems.forEach(item => careersObserver.observe(item));
+
+            const cards = block.querySelectorAll('.resp-card');
+            cards.forEach(card => careersObserver.observe(card));
+        });
+
+        const allFormContainers = document.querySelectorAll('.form-container');
+        allFormContainers.forEach(container => careersObserver.observe(container));
     }
 });
