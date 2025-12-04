@@ -921,24 +921,222 @@
         L.control.layers(baseLayers).addTo(map);
 
         // Create custom green marker for company
+        // Create custom green marker for company
         const greenIcon = L.divIcon({
             className: 'custom-div-icon',
             html: `<svg class="location-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#22c55e" stroke="#fff" stroke-width="1.5"/>
                     <circle cx="12" cy="9" r="2.5" fill="#fff"/>
                    </svg>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            popupAnchor: [0, -40]
+        });
+        // Add AOAS office marker
+        const officeMarker = L.marker(aoasLocation, { icon: greenIcon }).addTo(map);
+        officeMarker.bindPopup('<strong>🏢 AOAS Office</strong><br>Purok Mais, Barangay Paculob<br>Dumanjug, Cebu').openPopup();
 
-            if(isNaN(lat) || isNaN(lng)) {
-                showModal('Please enter valid latitude and longitude values.', 'Invalid Input');
-        return;
-            }
+        // Variables
+        let routingControl = null;
+        let userMarker = null;
 
-        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-            showModal('Latitude must be between -90 and 90, Longitude must be between -180 and 180.', 'Invalid Coordinates');
-            return;
+        // Function to calculate straight-line distance using Haversine formula
+        function calculateStraightLineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in kilometers
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c;
+            return distance;
         }
 
-        createRoute([lat, lng]);
+        // Function to create route
+        function createRoute(userLocation) {
+            // Remove existing route
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+
+            // Remove existing user marker
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+
+            // Create orange marker for user
+            const orangeIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<svg class="location-pin location-pin-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#FF6D1F" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="12" cy="9" r="2.5" fill="#fff"/>
+                       </svg>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+
+            // Add user marker
+            userMarker = L.marker(userLocation, { icon: orangeIcon }).addTo(map);
+            userMarker.bindPopup('<strong>📍 Your Location</strong>');
+
+            // Calculate straight-line distance first
+            const straightLineDistance = calculateStraightLineDistance(
+                userLocation[0], userLocation[1],
+                aoasLocation[0], aoasLocation[1]
+            );
+
+            // Flag to track if routing succeeded
+            let routingSucceeded = false;
+            let routingTimeout;
+
+            // Set a timeout to show straight-line distance if routing takes too long or fails
+            routingTimeout = setTimeout(() => {
+                if (!routingSucceeded) {
+                    // Show straight-line distance as fallback
+                    document.getElementById('distance').innerHTML = `${straightLineDistance.toFixed(2)} km <span style="font-size: 0.85em; color: #666;">(air distance)</span>`;
+                    document.getElementById('duration').textContent = 'Road routing not available';
+                    document.getElementById('userCoords').textContent = `${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`;
+                    document.getElementById('routeInfo').style.display = 'block';
+
+                    // Draw a dashed line to show straight-line distance
+                    if (window.straightLine) {
+                        map.removeLayer(window.straightLine);
+                    }
+                    window.straightLine = L.polyline([userLocation, aoasLocation], {
+                        color: '#FF6D1F',
+                        weight: 3,
+                        opacity: 0.6,
+                        dashArray: '10, 10'
+                    }).addTo(map);
+
+                    // Fit bounds to show both markers
+                    map.fitBounds([userLocation, aoasLocation], { padding: [50, 50] });
+                }
+            }, 3000); // Wait 3 seconds for routing
+
+            // Try to create routing
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLocation[0], userLocation[1]),
+                    L.latLng(aoasLocation[0], aoasLocation[1])
+                ],
+                lineOptions: {
+                    styles: [{ color: '#FF6D1F', opacity: 0.8, weight: 6 }]
+                },
+                createMarker: function () { return null; },
+                routeWhileDragging: false,
+                showAlternatives: false,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: true
+            }).addTo(map);
+
+            // Handle route found
+            routingControl.on('routesfound', function (e) {
+                routingSucceeded = true;
+                clearTimeout(routingTimeout);
+
+                // Remove straight line if it exists
+                if (window.straightLine) {
+                    map.removeLayer(window.straightLine);
+                }
+
+                const routes = e.routes;
+                const summary = routes[0].summary;
+
+                const distanceKm = (summary.totalDistance / 1000).toFixed(2);
+                const totalMinutes = Math.round(summary.totalTime / 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                const timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes} minutes`;
+
+                document.getElementById('distance').innerHTML = `${distanceKm} km <span style="font-size: 0.85em; color: #666;">(by road)</span>`;
+                document.getElementById('duration').textContent = timeString;
+                document.getElementById('userCoords').textContent = `${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`;
+                document.getElementById('routeInfo').style.display = 'block';
+            });
+
+            // Handle routing error
+            routingControl.on('routingerror', function (e) {
+                routingSucceeded = true; // Mark as handled
+                clearTimeout(routingTimeout);
+
+                // Show straight-line distance when routing fails
+                document.getElementById('distance').innerHTML = `${straightLineDistance.toFixed(2)} km <span style="font-size: 0.85em; color: #666;">(air distance)</span>`;
+                document.getElementById('duration').textContent = 'Road routing not available';
+                document.getElementById('userCoords').textContent = `${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`;
+                document.getElementById('routeInfo').style.display = 'block';
+
+                // Draw a dashed line to show straight-line distance
+                if (window.straightLine) {
+                    map.removeLayer(window.straightLine);
+                }
+                window.straightLine = L.polyline([userLocation, aoasLocation], {
+                    color: '#FF6D1F',
+                    weight: 3,
+                    opacity: 0.6,
+                    dashArray: '10, 10'
+                }).addTo(map);
+
+                // Fit bounds to show both markers
+                map.fitBounds([userLocation, aoasLocation], { padding: [50, 50] });
+            });
+        }
+
+        // Auto-detect location
+        document.getElementById('autoDetect').addEventListener('click', function () {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = '📍 Detecting...';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        const userLocation = [position.coords.latitude, position.coords.longitude];
+                        createRoute(userLocation);
+                        btn.textContent = '✓ Location Detected';
+                        btn.style.background = '#22c55e';
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.textContent = '🔄 Refresh Location';
+                            btn.style.background = '#FF6D1F';
+                        }, 2000);
+                    },
+                    function (error) {
+                        btn.disabled = false;
+                        btn.textContent = '❌ Access Denied';
+                        btn.style.background = '#ef4444';
+                        showModal('Please enable location access in your browser settings.', 'Location Access Required');
+                        setTimeout(() => {
+                            btn.textContent = '📍 Auto-Detect My Location';
+                            btn.style.background = '#FF6D1F';
+                        }, 3000);
+                    }
+                );
+            } else {
+                btn.disabled = false;
+                showModal('Geolocation is not supported by your browser.', 'Feature Not Supported');
+            }
+        });
+
+        // Manual coordinate input
+        document.getElementById('manualSubmit').addEventListener('click', function () {
+            const lat = parseFloat(document.getElementById('manualLat').value);
+            const lng = parseFloat(document.getElementById('manualLong').value);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                showModal('Please enter valid latitude and longitude values.', 'Invalid Input');
+                return;
+            }
+
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                showModal('Latitude must be between -90 and 90, Longitude must be between -180 and 180.', 'Invalid Coordinates');
+                return;
+            }
+
+            createRoute([lat, lng]);
         });
 
         // Click on map to set location
