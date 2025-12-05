@@ -77,9 +77,9 @@ module.exports = async (req, res) => {
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: 'AOAS Contact Form <noreply@attainmentofficeadserv.org>',
+      from: 'CLIENT FORM <noreply@attainmentofficeadserv.org>',
       to: ['alejandro@attainmentofficeadserv.org', 'support@attainmentofficeadserv.org'],
-      subject: `New Contact Form Submission from ${sanitizedName}`,
+      subject: `New Client Message from  ${sanitizedName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #22c55e; border-bottom: 2px solid #22c55e; padding-bottom: 10px;">

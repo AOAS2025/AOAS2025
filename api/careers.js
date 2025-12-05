@@ -107,14 +107,14 @@ module.exports = async (req, res) => {
 
     // Prepare email options
     const emailOptions = {
-      from: 'AOAS WEB Receive Mail <onboarding@resend.dev>',
+      from: 'APPLICATION FORM <noreply@attainmentofficeadserv.org>',
       to: ['support@attainmentofficeadserv.org'],
-      subject: `New Career Application from ${sanitizedData.fullName}`,
+      subject: `New Job Application from ${sanitizedData.fullName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background: #f9fafb;">
           <div style="background: linear-gradient(135deg, #5B9DD9 0%, #3A7AB0 100%); padding: 30px; border-radius: 12px 12px 0 0;">
             <h2 style="color: #ffffff; margin: 0; font-size: 28px; text-align: center;">
-              New Career Application
+              New Job Application
             </h2>
           </div>
           <div style="background: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
