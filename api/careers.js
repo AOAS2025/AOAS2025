@@ -1,6 +1,6 @@
 const { Resend } = require('resend');
 
-// Version 2.0 - Updated email template with screening questions, skills, cover letter
+// Version 2.1 - Fixed 413 error, 3MB file limit, screening questions, skills, cover letter
 // Get and validate API key from environment variable
 const RESEND_API_KEY = process.env.RESEND_API_KEY?.trim();
 
