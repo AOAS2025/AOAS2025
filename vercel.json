@@ -11,28 +11,11 @@
       "maxDuration": 30
     }
   },
-  "routes": [
-    {
-      "src": "/api/careers",
-      "methods": [
-        "POST",
-        "OPTIONS"
-      ],
-      "dest": "/api/careers.js",
-      "headers": {
-        "x-vercel-payload-limit": "52428800"
-      }
-    },
-    {
-      "src": "/api/contact",
-      "methods": [
-        "POST",
-        "OPTIONS"
-      ],
-      "dest": "/api/contact.js"
-    }
-  ],
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
