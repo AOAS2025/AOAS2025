@@ -703,7 +703,7 @@
                     <div class="faq-item">
                         <button class="faq-question">
                             <span>Will I receive a response within 24-48 hours?</span>
-                            <span class="faq-icon">â–¼</span>
+                            <span class="faq-icon">&#9662;</span>
                         </button>
                         <div class="faq-answer">
                             <p>Yes, absolutely! Our commitment is to get back to you promptly within 24-48 hours from
@@ -717,7 +717,7 @@
                     <div class="faq-item">
                         <button class="faq-question">
                             <span>What services do you offer?</span>
-                            <span class="faq-icon">â–¼</span>
+                            <span class="faq-icon">&#9662;</span>
                         </button>
                         <div class="faq-answer">
                             <p>We provide comprehensive virtual administrative services including administration,
@@ -731,7 +731,7 @@
                     <div class="faq-item">
                         <button class="faq-question">
                             <span>How do you ensure quality and reliability?</span>
-                            <span class="faq-icon">â–¼</span>
+                            <span class="faq-icon">&#9662;</span>
                         </button>
                         <div class="faq-answer">
                             <p>We have a rigorous recruitment process and provide comprehensive training to all our
@@ -748,7 +748,7 @@
                     <div class="faq-item">
                         <button class="faq-question">
                             <span>What industries do you serve?</span>
-                            <span class="faq-icon">â–¼</span>
+                            <span class="faq-icon">&#9662;</span>
                         </button>
                         <div class="faq-answer">
                             <p>While we specialize in NDIS healthcare institutions, we also serve various Australian
@@ -762,7 +762,7 @@
                     <div class="faq-item">
                         <button class="faq-question">
                             <span>How does the recruitment and hiring process work?</span>
-                            <span class="faq-icon">â–¼</span>
+                            <span class="faq-icon">&#9662;</span>
                         </button>
                         <div class="faq-answer">
                             <p>We handle the entire recruitment process for you - from sourcing candidates to conducting
@@ -777,7 +777,7 @@
                     <div class="faq-item">
                         <button class="faq-question">
                             <span>Can I customize the services to my specific needs?</span>
-                            <span class="faq-icon">â–¼</span>
+                            <span class="faq-icon">&#9662;</span>
                         </button>
                         <div class="faq-answer">
                             <p>Absolutely! We understand that every business has unique requirements. Our services are
@@ -914,7 +914,7 @@
                 </div>
 
                 <div class="map-instruction">
-                    ðŸ’¡ <strong>Tip:</strong> Click anywhere on the map to set your location and calculate the route! For
+                    <strong>Tip:</strong> Click anywhere on the map to set your location and calculate the route! For
                     international locations, air distance will be displayed.
                 </div>
 
@@ -1081,12 +1081,12 @@
 
         // Base layers
         const terrainLayerHome = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'Â© OpenStreetMap contributors',
+            attribution: '(c) OpenStreetMap contributors',
             maxZoom: 19
         });
 
         const satelliteLayerHome = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles Â© Esri',
+            attribution: 'Tiles (c) Esri',
             maxZoom: 19
         });
 
@@ -1114,7 +1114,7 @@
 
         // Add AOAS office marker
         const officeMarkerHome = L.marker(aoasLocationHome, { icon: greenIconHome }).addTo(mapHome);
-        officeMarkerHome.bindPopup('<strong>ðŸ¢ AOAS Office</strong><br>Purok Mais, Barangay Paculob<br>Dumanjug, Cebu').openPopup();
+        officeMarkerHome.bindPopup('<strong>AOAS Office</strong><br>Purok Mais, Barangay Paculob<br>Dumanjug, Cebu').openPopup();
 
         // Variables
         let routingControlHome = null;
@@ -1159,7 +1159,7 @@
 
             // Add user marker
             userMarkerHome = L.marker(userLocation, { icon: orangeIconHome }).addTo(mapHome);
-            userMarkerHome.bindPopup('<strong>ðŸ“ Your Location</strong>');
+            userMarkerHome.bindPopup('<strong>Your Location</strong>');
 
             // Calculate straight-line distance first
             const straightLineDistance = calculateStraightLineDistance(
@@ -1269,28 +1269,28 @@
         document.getElementById('autoDetectHome').addEventListener('click', function () {
             const btn = this;
             btn.disabled = true;
-            btn.textContent = 'ðŸ“ Detecting...';
+            btn.textContent = 'Detecting...';
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     function (position) {
                         const userLocation = [position.coords.latitude, position.coords.longitude];
                         createRouteHome(userLocation);
-                        btn.textContent = 'âœ“ Location Detected';
+                        btn.textContent = 'Location detected';
                         btn.style.background = '#22c55e';
                         setTimeout(() => {
                             btn.disabled = false;
-                            btn.textContent = 'ðŸ”„ Refresh Location';
+                            btn.textContent = 'Refresh location';
                             btn.style.background = '#FF6D1F';
                         }, 2000);
                     },
                     function (error) {
                         btn.disabled = false;
-                        btn.textContent = 'âŒ Access Denied';
+                        btn.textContent = 'Access denied';
                         btn.style.background = '#ef4444';
                         showModalHome('Please enable location access in your browser settings.', 'Location Access Required');
                         setTimeout(() => {
-                            btn.textContent = 'ðŸ“ Auto-Detect My Location';
+                            btn.textContent = 'Auto-Detect My Location';
                             btn.style.background = '#FF6D1F';
                         }, 3000);
                     }

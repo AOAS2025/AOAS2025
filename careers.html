@@ -407,7 +407,7 @@
         }
 
         .clean-list li::before {
-            content: 'âœ“';
+            content: '-';
             position: absolute;
             left: 0;
             color: #FF6D1F;
@@ -439,7 +439,7 @@
         }
 
         .resp-card ul li::before {
-            content: 'â†’';
+            content: '>';
         }
 
         /* Form Overrides */
@@ -760,19 +760,19 @@
             <h3>Job Overview</h3>
             <div class="overview-grid">
                 <div class="overview-item">
-                    <strong>ðŸ“ Location</strong>
+                    <strong>Location</strong>
                     <span>Purok Mais, Barangay Paculob, Dumanjug, Cebu</span>
                 </div>
                 <div class="overview-item">
-                    <strong>â° Schedule</strong>
-                    <span>Mondayâ€“Friday, 7:00 AM - 4:00 PM PH</span>
+                    <strong>Schedule</strong>
+                    <span>Monday-Friday, 7:00 AM - 4:00 PM PH</span>
                 </div>
                 <div class="overview-item">
-                    <strong>ðŸš€ Start Date</strong>
+                    <strong>Start Date</strong>
                     <span>ASAP</span>
                 </div>
                 <div class="overview-item">
-                    <strong>ðŸ’¼ Type</strong>
+                    <strong>Type</strong>
                     <span>Full-time</span>
                 </div>
             </div>
@@ -798,7 +798,7 @@
             <h3>Responsibilities</h3>
 
             <div class="resp-card">
-                <h4>ðŸ“ž Customer Service</h4>
+                <h4>Customer Service</h4>
                 <ul class="clean-list">
                     <li>Provide friendly and professional assistance to customers</li>
                     <li>Respond to inquiries and resolve concerns promptly</li>
@@ -808,7 +808,7 @@
             </div>
 
             <div class="resp-card">
-                <h4>ðŸ“‹ Administrative & Office Support</h4>
+                <h4>Administrative & Office Support</h4>
                 <ul class="clean-list">
                     <li>Handle administrative tasks (filing, data entry, documents)</li>
                     <li>Assist with office communications, scheduling, coordination</li>
@@ -1035,7 +1035,7 @@
                 </div>
 
                 <div class="map-instruction">
-                    ðŸ’¡ <strong>Tip:</strong> Click anywhere on the map to set your location and calculate the route!
+                    <strong>Tip:</strong> Click anywhere on the map to set your location and calculate the route!
                 </div>
 
                 <div id="map"></div>
@@ -1168,12 +1168,12 @@
 
         // Base layers
         const terrainLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'Â© OpenStreetMap contributors',
+            attribution: '(c) OpenStreetMap contributors',
             maxZoom: 19
         });
 
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles Â© Esri',
+            attribution: 'Tiles (c) Esri',
             maxZoom: 19
         });
 
@@ -1201,7 +1201,7 @@
         });
         // Add AOAS office marker
         const officeMarker = L.marker(aoasLocation, { icon: greenIcon }).addTo(map);
-        officeMarker.bindPopup('<strong>ðŸ¢ AOAS Office</strong><br>Purok Mais, Barangay Paculob<br>Dumanjug, Cebu').openPopup();
+        officeMarker.bindPopup('<strong>AOAS Office</strong><br>Purok Mais, Barangay Paculob<br>Dumanjug, Cebu').openPopup();
 
         // Variables
         let routingControl = null;
@@ -1246,7 +1246,7 @@
 
             // Add user marker
             userMarker = L.marker(userLocation, { icon: orangeIcon }).addTo(map);
-            userMarker.bindPopup('<strong>ðŸ“ Your Location</strong>');
+            userMarker.bindPopup('<strong>Your Location</strong>');
 
             // Calculate straight-line distance first
             const straightLineDistance = calculateStraightLineDistance(
@@ -1356,28 +1356,28 @@
         document.getElementById('autoDetect').addEventListener('click', function () {
             const btn = this;
             btn.disabled = true;
-            btn.textContent = 'ðŸ“ Detecting...';
+            btn.textContent = 'Detecting...';
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     function (position) {
                         const userLocation = [position.coords.latitude, position.coords.longitude];
                         createRoute(userLocation);
-                        btn.textContent = 'âœ“ Location Detected';
+                        btn.textContent = 'Location detected';
                         btn.style.background = '#22c55e';
                         setTimeout(() => {
                             btn.disabled = false;
-                            btn.textContent = 'ðŸ”„ Refresh Location';
+                            btn.textContent = 'Refresh location';
                             btn.style.background = '#FF6D1F';
                         }, 2000);
                     },
                     function (error) {
                         btn.disabled = false;
-                        btn.textContent = 'âŒ Access Denied';
+                        btn.textContent = 'Access denied';
                         btn.style.background = '#ef4444';
                         showModal('Please enable location access in your browser settings.', 'Location Access Required');
                         setTimeout(() => {
-                            btn.textContent = 'ðŸ“ Auto-Detect My Location';
+                            btn.textContent = 'Auto-Detect My Location';
                             btn.style.background = '#FF6D1F';
                         }, 3000);
                     }
