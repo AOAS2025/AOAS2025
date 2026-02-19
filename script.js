@@ -1748,3 +1748,104 @@ document.addEventListener('DOMContentLoaded', function () {
         allFormContainers.forEach(container => careersObserver.observe(container));
     }
 });
+
+// Feedback Slider
+document.addEventListener('DOMContentLoaded', function () {
+    const slider = document.getElementById('feedbackSlider');
+    if (!slider) return;
+
+    const track = slider.querySelector('.feedback-track');
+    const cards = Array.from(slider.querySelectorAll('.feedback-card'));
+    const prevBtn = document.getElementById('feedbackPrev');
+    const nextBtn = document.getElementById('feedbackNext');
+    const dotsWrap = document.getElementById('feedbackDots');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!track || cards.length === 0 || !prevBtn || !nextBtn || !dotsWrap) return;
+
+    let currentIndex = 0;
+    let autoTimer = null;
+    const autoDelay = isLowEndDevice ? 7000 : 5000;
+
+    cards.forEach((card, index) => {
+        card.classList.toggle('is-active', index === 0);
+        card.setAttribute('aria-hidden', index === 0 ? 'false' : 'true');
+
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'feedback-dot';
+        dot.setAttribute('aria-label', `Show testimonial ${index + 1}`);
+        dot.addEventListener('click', () => goTo(index, true));
+        dotsWrap.appendChild(dot);
+    });
+
+    const dots = Array.from(dotsWrap.querySelectorAll('.feedback-dot'));
+
+    const updateSlider = () => {
+        track.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+        cards.forEach((card, index) => {
+            const isActive = index === currentIndex;
+            card.classList.toggle('is-active', isActive);
+            card.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+        });
+
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentIndex);
+        });
+    };
+
+    const goTo = (index, fromUser = false) => {
+        currentIndex = (index + cards.length) % cards.length;
+        updateSlider();
+        if (fromUser) {
+            restartAuto();
+        }
+    };
+
+    const goNext = (fromUser = false) => goTo(currentIndex + 1, fromUser);
+    const goPrev = (fromUser = false) => goTo(currentIndex - 1, fromUser);
+
+    const stopAuto = () => {
+        if (autoTimer) {
+            clearInterval(autoTimer);
+            autoTimer = null;
+        }
+    };
+
+    const startAuto = () => {
+        if (prefersReducedMotion || cards.length < 2) return;
+        stopAuto();
+        autoTimer = setInterval(() => {
+            goNext(false);
+        }, autoDelay);
+    };
+
+    const restartAuto = () => {
+        stopAuto();
+        startAuto();
+    };
+
+    prevBtn.addEventListener('click', () => goPrev(true));
+    nextBtn.addEventListener('click', () => goNext(true));
+
+    slider.addEventListener('mouseenter', stopAuto);
+    slider.addEventListener('mouseleave', startAuto);
+    slider.addEventListener('focusin', stopAuto);
+    slider.addEventListener('focusout', (event) => {
+        if (!slider.contains(event.relatedTarget)) {
+            startAuto();
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopAuto();
+        } else {
+            startAuto();
+        }
+    });
+
+    updateSlider();
+    startAuto();
+});

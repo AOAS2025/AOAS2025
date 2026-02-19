@@ -42,13 +42,13 @@
 
     <title>AOAS | Virtual Assistants Australia & NDIS Admin Support | Attainment Office Administrative Services</title>
     <!-- Performance: Preload critical resources -->
-    <link rel="preload" href="style.css?v=20260219a" as="style">
-    <link rel="preload" href="script.js?v=20260219a" as="script">
+    <link rel="preload" href="style.css?v=20260219b" as="style">
+    <link rel="preload" href="script.js?v=20260219b" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260219a">
+    <link rel="stylesheet" href="style.css?v=20260219b">
     <!-- Favicon - Multiple formats for best crawler compatibility -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/ico" href="/favicon.ico">
@@ -796,8 +796,118 @@
     <section class="section section-light">
         <div class="container">
             <h2 class="section-title-center">Client Feedback</h2>
-            <div class="feedback-placeholder">
-                <p>Testimonials coming soon...</p>
+            <div class="feedback-slider" id="feedbackSlider" aria-label="Anonymous client testimonials">
+                <div class="feedback-viewport">
+                    <div class="feedback-track">
+                        <article class="feedback-card is-active">
+                            <div class="feedback-head">
+                                <div class="feedback-avatar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="8" r="4" fill="currentColor"></circle>
+                                        <path d="M4 20c0-3.6 3.6-6 8-6s8 2.4 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    </svg>
+                                </div>
+                                <div class="feedback-meta">
+                                    <p class="feedback-name">E*** T***</p>
+                                    <p class="feedback-service">Payroll Support</p>
+                                </div>
+                                <p class="feedback-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                            </div>
+                            <p class="feedback-text">AOAS helped us clean up payroll cycles and timesheet checks quickly. Our pay-run process is now consistent and easier for our internal team to manage.</p>
+                        </article>
+
+                        <article class="feedback-card">
+                            <div class="feedback-head">
+                                <div class="feedback-avatar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="8" r="4" fill="currentColor"></circle>
+                                        <path d="M4 20c0-3.6 3.6-6 8-6s8 2.4 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    </svg>
+                                </div>
+                                <div class="feedback-meta">
+                                    <p class="feedback-name">M*** R***</p>
+                                    <p class="feedback-service">Bookkeeping</p>
+                                </div>
+                                <p class="feedback-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                            </div>
+                            <p class="feedback-text">Their bookkeeping support improved our month-end routine. Reconciliations and recurring reports are now submitted on time with fewer revisions.</p>
+                        </article>
+
+                        <article class="feedback-card">
+                            <div class="feedback-head">
+                                <div class="feedback-avatar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="8" r="4" fill="currentColor"></circle>
+                                        <path d="M4 20c0-3.6 3.6-6 8-6s8 2.4 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    </svg>
+                                </div>
+                                <div class="feedback-meta">
+                                    <p class="feedback-name">J*** L***</p>
+                                    <p class="feedback-service">Tax &amp; Compliance Support</p>
+                                </div>
+                                <p class="feedback-stars" aria-label="4 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9734;</p>
+                            </div>
+                            <p class="feedback-text">The team gave us better visibility on compliance timelines and document flow. Follow-ups are tracked well, which reduced missed internal deadlines.</p>
+                        </article>
+
+                        <article class="feedback-card">
+                            <div class="feedback-head">
+                                <div class="feedback-avatar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="8" r="4" fill="currentColor"></circle>
+                                        <path d="M4 20c0-3.6 3.6-6 8-6s8 2.4 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    </svg>
+                                </div>
+                                <div class="feedback-meta">
+                                    <p class="feedback-name">S*** D***</p>
+                                    <p class="feedback-service">Data Entry</p>
+                                </div>
+                                <p class="feedback-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                            </div>
+                            <p class="feedback-text">Our data cleanup and transfer backlog was completed faster than expected. Output quality was reliable, and communication stayed clear throughout the handoff.</p>
+                        </article>
+
+                        <article class="feedback-card">
+                            <div class="feedback-head">
+                                <div class="feedback-avatar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="8" r="4" fill="currentColor"></circle>
+                                        <path d="M4 20c0-3.6 3.6-6 8-6s8 2.4 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    </svg>
+                                </div>
+                                <div class="feedback-meta">
+                                    <p class="feedback-name">A*** P***</p>
+                                    <p class="feedback-service">NDIS Administration</p>
+                                </div>
+                                <p class="feedback-stars" aria-label="4 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9734;</p>
+                            </div>
+                            <p class="feedback-text">AOAS understood our NDIS admin workflow and helped stabilize scheduling and documentation tasks. It made daily coordination much smoother.</p>
+                        </article>
+
+                        <article class="feedback-card">
+                            <div class="feedback-head">
+                                <div class="feedback-avatar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="8" r="4" fill="currentColor"></circle>
+                                        <path d="M4 20c0-3.6 3.6-6 8-6s8 2.4 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    </svg>
+                                </div>
+                                <div class="feedback-meta">
+                                    <p class="feedback-name">C*** N***</p>
+                                    <p class="feedback-service">Customer Service Support</p>
+                                </div>
+                                <p class="feedback-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                            </div>
+                            <p class="feedback-text">Their customer support process improved our inbox handling and escalation flow. Response quality is professional and consistent across shifts.</p>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="feedback-controls">
+                    <button type="button" class="feedback-control" id="feedbackPrev" aria-label="Previous testimonial">Prev</button>
+                    <div class="feedback-dots" id="feedbackDots" aria-label="Feedback slide navigation"></div>
+                    <button type="button" class="feedback-control" id="feedbackNext" aria-label="Next testimonial">Next</button>
+                </div>
             </div>
         </div>
     </section>
@@ -1036,7 +1146,7 @@
     </div>
 
     <script src="tracker.js"></script>
-    <script src="script.js?v=20260219a"></script>
+    <script src="script.js?v=20260219b"></script>
     <script src="chatbot.js?v=20260219a"></script>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1330,6 +1440,7 @@
 </body>
 
 </html>
+
 
 
 
