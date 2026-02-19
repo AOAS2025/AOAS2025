@@ -43,6 +43,29 @@
         }
     }
 
+    function ensureHcaptchaScript() {
+        if (window.hcaptcha) {
+            return Promise.resolve();
+        }
+
+        if (window.__aoasHcaptchaPromise) {
+            return window.__aoasHcaptchaPromise;
+        }
+
+        window.__aoasHcaptchaPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
+            script.async = true;
+            script.defer = true;
+            script.dataset.aoasHcaptcha = 'true';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load hCaptcha script'));
+            document.head.appendChild(script);
+        });
+
+        return window.__aoasHcaptchaPromise;
+    }
+
     function setStatus(target, message, tone = 'neutral') {
         if (!target) return;
         target.textContent = message;
@@ -126,40 +149,40 @@
         return `
             <h3>Inquire About ${meta.label}</h3>
             <p>${meta.intro}</p>
-            <form class="service-inquiry-form" data-service="${serviceKey}">
+            <form class="service-inquiry-form" data-service="${serviceKey}" autocomplete="on">
                 <div class="row">
                     <div>
                         <label for="${idPrefix}-name">Name</label>
-                        <input id="${idPrefix}-name" name="name" type="text" required maxlength="120">
+                        <input id="${idPrefix}-name" name="name" type="text" required maxlength="120" autocomplete="name">
                     </div>
                     <div>
                         <label for="${idPrefix}-email">Email</label>
-                        <input id="${idPrefix}-email" name="email" type="email" required maxlength="320">
+                        <input id="${idPrefix}-email" name="email" type="email" required maxlength="320" autocomplete="email">
                     </div>
                 </div>
 
                 <div class="row">
                     <div>
                         <label for="${idPrefix}-phone">Phone (optional)</label>
-                        <input id="${idPrefix}-phone" name="phone" type="text" maxlength="50">
+                        <input id="${idPrefix}-phone" name="phone" type="text" maxlength="50" autocomplete="tel">
                     </div>
                     <div>
                         <label for="${idPrefix}-location">Location</label>
-                        <select id="${idPrefix}-location" name="location">
+                        <select id="${idPrefix}-location" name="location" autocomplete="country-name">
                             <option value="Australia" selected>Australia</option>
                             <option value="Philippines">Philippines</option>
                             <option value="Other">Other</option>
                         </select>
                         <div class="service-location-other" hidden>
                             <label for="${idPrefix}-location-other">Enter location</label>
-                            <input id="${idPrefix}-location-other" name="locationOther" type="text" maxlength="120" placeholder="City / Country">
+                            <input id="${idPrefix}-location-other" name="locationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="address-level2">
                         </div>
                     </div>
                 </div>
 
                 <div>
                     <label for="${idPrefix}-message">Message</label>
-                    <textarea id="${idPrefix}-message" name="message" required maxlength="5000" rows="6"></textarea>
+                    <textarea id="${idPrefix}-message" name="message" required maxlength="5000" rows="6" autocomplete="off"></textarea>
                 </div>
 
                 <div class="honeypot-field" aria-hidden="true">
@@ -168,7 +191,7 @@
                 </div>
 
                 <div class="service-captcha-container" hidden>
-                    <label>Captcha</label>
+                    <p class="captcha-label">Captcha</p>
                     <div class="service-captcha-target"></div>
                 </div>
 
@@ -262,9 +285,16 @@
             }
         };
 
-        const initCaptcha = () => {
+        const initCaptcha = async () => {
             if (!hcaptchaSiteKey || !captchaContainer || !captchaTarget) return;
             captchaContainer.hidden = false;
+
+            try {
+                await ensureHcaptchaScript();
+            } catch (error) {
+                setStatus(statusEl, 'Captcha failed to load. Please refresh and try again.', 'error');
+                return;
+            }
 
             const render = () => {
                 if (!window.hcaptcha || captchaWidgetId !== null) return;

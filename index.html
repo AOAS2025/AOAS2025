@@ -42,13 +42,13 @@
 
     <title>AOAS | Virtual Assistants Australia & NDIS Admin Support | Attainment Office Administrative Services</title>
     <!-- Performance: Preload critical resources -->
-    <link rel="preload" href="style.css?v=20260218e" as="style">
-    <link rel="preload" href="script.js?v=20260218e" as="script">
+    <link rel="preload" href="style.css?v=20260219a" as="style">
+    <link rel="preload" href="script.js?v=20260219a" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260218e">
+    <link rel="stylesheet" href="style.css?v=20260219a">
     <!-- Favicon - Multiple formats for best crawler compatibility -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/ico" href="/favicon.ico">
@@ -813,10 +813,10 @@
                         goals!</p>
                 </div>
                 <div class="contact-form-wrapper">
-                    <form class="contact-form" id="contactForm">
+                    <form class="contact-form" id="contactForm" autocomplete="on">
                         <div class="form-group">
                             <label for="service">Service <span class="required">(required)</span></label>
-                            <select id="service" name="service" required>
+                            <select id="service" name="service" required autocomplete="off">
                                 <option value="">Select a service</option>
                                 <option value="payroll">Payroll Support</option>
                                 <option value="bookkeeping">Bookkeeping</option>
@@ -832,42 +832,42 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="name">Name <span class="required">(required)</span></label>
-                                <input type="text" id="name" name="name" required maxlength="120">
+                                <input type="text" id="name" name="name" required maxlength="120" autocomplete="name">
                             </div>
                             <div class="form-group">
                                 <label for="email">Email <span class="required">(required)</span></label>
-                                <input type="email" id="email" name="email" required maxlength="320">
+                                <input type="email" id="email" name="email" required maxlength="320" autocomplete="email">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="phone">Phone <span class="required">(optional)</span></label>
-                                <input type="text" id="phone" name="phone" maxlength="50">
+                                <input type="text" id="phone" name="phone" maxlength="50" autocomplete="tel">
                             </div>
                             <div class="form-group">
                                 <label for="location">Country / Location</label>
-                                <select id="location" name="location">
+                                <select id="location" name="location" autocomplete="country-name">
                                     <option value="Australia" selected>Australia</option>
                                     <option value="Philippines">Philippines</option>
                                     <option value="Other">Other</option>
                                 </select>
                                 <div class="chat-other-location-wrap" id="contactOtherLocationWrap" hidden>
                                     <label for="locationOther">Enter location</label>
-                                    <input type="text" id="locationOther" name="locationOther" maxlength="120"
+                                    <input type="text" id="locationOther" name="locationOther" maxlength="120" autocomplete="address-level2"
                                         placeholder="City / Country">
                                 </div>
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="message">Message <span class="required">(required)</span></label>
-                            <textarea id="message" name="message" rows="5" maxlength="6000" required></textarea>
+                            <textarea id="message" name="message" rows="5" maxlength="6000" required autocomplete="off"></textarea>
                         </div>
                         <div class="honeypot-field" aria-hidden="true">
                             <label for="website">Website</label>
                             <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
                         </div>
                         <div class="captcha-container" id="contactCaptchaContainer" hidden>
-                            <label>Captcha <span class="required">(required)</span></label>
+                            <p class="captcha-label">Captcha <span class="required">(required)</span></p>
                             <div id="contactCaptcha"></div>
                         </div>
                         <p class="privacy-note">By submitting, you agree to our follow-up regarding this inquiry.</p>
@@ -1036,10 +1036,8 @@
     </div>
 
     <script src="tracker.js"></script>
-    <script src="script.js?v=20260218e"></script>
-    <script src="chatbot.js?v=20260218d"></script>
-    <script src="https://js.hcaptcha.com/1/api.js?render=explicit" async defer></script>
-
+    <script src="script.js?v=20260219a"></script>
+    <script src="chatbot.js?v=20260219a"></script>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Leaflet Routing Machine JS -->
@@ -1332,6 +1330,7 @@
 </body>
 
 </html>
+
 
 
 

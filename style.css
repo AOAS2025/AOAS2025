@@ -2939,6 +2939,14 @@ body::before {
     margin-bottom: var(--spacing-xs);
 }
 
+.careers-form .field-label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-dark);
+    margin-bottom: var(--spacing-xs);
+}
+
 .careers-form input[type="text"],
 .careers-form input[type="email"],
 .careers-form input[type="tel"],
@@ -3537,6 +3545,13 @@ body::before {
 
 .captcha-container {
     margin-bottom: var(--spacing-md);
+}
+
+.captcha-label {
+    margin: 0 0 var(--spacing-xs);
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-dark);
 }
 
 /* ==============================================
@@ -4147,6 +4162,13 @@ body::before {
 .service-captcha-container {
     display: grid;
     gap: 6px;
+}
+
+.service-captcha-container .captcha-label {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: var(--font-weight-semibold);
+    color: #1f2937;
 }
 
 .service-form-status {

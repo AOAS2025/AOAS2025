@@ -227,7 +227,7 @@
                 </header>
                 <div class="aoas-chat-body" id="aoasChatBody"></div>
                 <div class="aoas-chat-actions" id="aoasChatActions"></div>
-                <form class="aoas-chat-lead-form" id="aoasChatLeadForm" hidden>
+                <form class="aoas-chat-lead-form" id="aoasChatLeadForm" hidden autocomplete="on">
                     <div class="aoas-chat-lead-head">
                         <h4>How should we contact you?</h4>
                         <button type="button" class="aoas-chat-mini-btn" id="chatLeadCancel">Back</button>
@@ -245,11 +245,11 @@
                         <option value="other">Other</option>
                     </select>
                     <label for="chatLeadName">Name</label>
-                    <input id="chatLeadName" type="text" required maxlength="120">
+                    <input id="chatLeadName" type="text" required maxlength="120" autocomplete="name">
                     <label for="chatLeadEmail">Email</label>
-                    <input id="chatLeadEmail" type="email" required maxlength="320">
+                    <input id="chatLeadEmail" type="email" required maxlength="320" autocomplete="email">
                     <label for="chatLeadPhone">Phone (optional)</label>
-                    <input id="chatLeadPhone" type="text" maxlength="50">
+                    <input id="chatLeadPhone" type="text" maxlength="50" autocomplete="tel">
                     <label for="chatLeadLocation">Location</label>
                     <select id="chatLeadLocation">
                         <option value="Australia" selected>Australia</option>
@@ -258,10 +258,10 @@
                     </select>
                     <div class="chat-other-location-wrap" id="chatOtherLocationWrap" hidden>
                         <label for="chatLeadLocationOther">Enter location</label>
-                        <input id="chatLeadLocationOther" type="text" maxlength="120" placeholder="City / Country">
+                        <input id="chatLeadLocationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="address-level2">
                     </div>
                     <label for="chatLeadMessage">Message</label>
-                    <textarea id="chatLeadMessage" rows="3" required maxlength="1200"></textarea>
+                    <textarea id="chatLeadMessage" rows="3" required maxlength="1200" autocomplete="off"></textarea>
                     <label class="aoas-chat-consent">
                         <input id="chatLeadConsent" type="checkbox" required>
                         I agree to AOAS storing my details for follow-up.

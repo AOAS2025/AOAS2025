@@ -569,12 +569,42 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    const initializeCaptcha = () => {
+    const ensureHcaptchaScript = () => {
+        if (window.hcaptcha) {
+            return Promise.resolve();
+        }
+
+        if (window.__aoasHcaptchaPromise) {
+            return window.__aoasHcaptchaPromise;
+        }
+
+        window.__aoasHcaptchaPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
+            script.async = true;
+            script.defer = true;
+            script.dataset.aoasHcaptcha = 'true';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load hCaptcha script'));
+            document.head.appendChild(script);
+        });
+
+        return window.__aoasHcaptchaPromise;
+    };
+
+    const initializeCaptcha = async () => {
         if (!captchaContainer || !captchaTarget || !hcaptchaSiteKey) {
             return;
         }
 
         captchaContainer.hidden = false;
+
+        try {
+            await ensureHcaptchaScript();
+        } catch (error) {
+            console.warn('Captcha script failed to load.', error);
+            return;
+        }
 
         const renderWidget = () => {
             if (!window.hcaptcha || captchaWidgetId !== null) {

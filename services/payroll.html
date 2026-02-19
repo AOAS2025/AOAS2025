@@ -8,7 +8,7 @@
     <meta name="description" content="Reliable payroll support workflows for Australian operations.">
     <meta name="aoas-hcaptcha-sitekey" content="">
     <link rel="canonical" href="https://www.attainmentofficeadserv.org/services/payroll">
-    <link rel="stylesheet" href="../style.css?v=20260218e">
+    <link rel="stylesheet" href="../style.css?v=20260219a">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 
@@ -79,40 +79,40 @@
             <aside class="service-inquiry-card service-animate" id="service-inquiry">
                 <h3>Inquire About Payroll Support</h3>
                 <p>Share your payroll workflow details so we can align the right support model.</p>
-                <form class="service-inquiry-form" data-service="payroll">
+                <form class="service-inquiry-form" data-service="payroll" autocomplete="on">
                     <div class="row">
                         <div>
                             <label for="payroll-name">Name</label>
-                            <input id="payroll-name" name="name" type="text" required maxlength="120">
+                            <input id="payroll-name" name="name" type="text" required maxlength="120" autocomplete="name">
                         </div>
                         <div>
                             <label for="payroll-email">Email</label>
-                            <input id="payroll-email" name="email" type="email" required maxlength="320">
+                            <input id="payroll-email" name="email" type="email" required maxlength="320" autocomplete="email">
                         </div>
                     </div>
 
                     <div class="row">
                         <div>
                             <label for="payroll-phone">Phone (optional)</label>
-                            <input id="payroll-phone" name="phone" type="text" maxlength="50">
+                            <input id="payroll-phone" name="phone" type="text" maxlength="50" autocomplete="tel">
                         </div>
                         <div>
                             <label for="payroll-location">Location</label>
-                            <select id="payroll-location" name="location">
+                            <select id="payroll-location" name="location" autocomplete="country-name">
                                 <option value="Australia" selected>Australia</option>
                                 <option value="Philippines">Philippines</option>
                                 <option value="Other">Other</option>
                             </select>
                             <div class="service-location-other" hidden>
                                 <label for="payroll-location-other">Enter location</label>
-                                <input id="payroll-location-other" name="locationOther" type="text" maxlength="120" placeholder="City / Country">
+                                <input id="payroll-location-other" name="locationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="address-level2">
                             </div>
                         </div>
                     </div>
 
                     <div>
                         <label for="payroll-message">Message</label>
-                        <textarea id="payroll-message" name="message" required maxlength="5000" rows="6"></textarea>
+                        <textarea id="payroll-message" name="message" required maxlength="5000" rows="6" autocomplete="off"></textarea>
                     </div>
 
                     <div class="honeypot-field" aria-hidden="true">
@@ -121,7 +121,7 @@
                     </div>
 
                     <div class="service-captcha-container" hidden>
-                        <label>Captcha</label>
+                        <p class="captcha-label">Captcha</p>
                         <div class="service-captcha-target"></div>
                     </div>
 
@@ -215,12 +215,14 @@
     </footer>
 
     <script src="../tracker.js"></script>
-    <script src="../chatbot.js?v=20260218d"></script>
-    <script src="https://js.hcaptcha.com/1/api.js?render=explicit" async defer></script>
-    <script src="service-page.js?v=20260218d"></script>
+    <script src="../chatbot.js?v=20260219a"></script>
+    <script src="service-page.js?v=20260219a"></script>
 </body>
 
 </html>
+
+
+
 
 
 

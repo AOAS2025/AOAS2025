@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260218e">
+    <link rel="stylesheet" href="style.css?v=20260219a">
     <!-- Favicon - Multiple formats for best crawler compatibility -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/ico" href="/favicon.ico">
@@ -828,21 +828,21 @@
             <form class="careers-form" id="careersForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="fullName">Full Name</label>
-                    <input type="text" id="fullName" name="fullName" required>
+                    <input type="text" id="fullName" name="fullName" required autocomplete="name">
                 </div>
 
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required autocomplete="email">
                 </div>
 
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" required>
+                    <input type="tel" id="phone" name="phone" required autocomplete="tel">
                 </div>
 
                 <div class="form-group">
-                    <label>Preferred Working Hours</label>
+                    <p class="field-label">Preferred Working Hours</p>
                     <div class="radio-options-vertical">
                         <label class="radio-option">
                             <input type="radio" name="workingHours" value="Morning Shift" required>
@@ -860,7 +860,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>How soon can you start?</label>
+                    <p class="field-label">How soon can you start?</p>
                     <div class="radio-options-vertical">
                         <label class="radio-option">
                             <input type="radio" name="availability" value="Immediately" required>
@@ -883,7 +883,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Years of experience</label>
+                    <p class="field-label">Years of experience</p>
                     <div class="radio-options-vertical">
                         <label class="radio-option">
                             <input type="radio" name="yearsExperience" value="0-1 year" required>
@@ -923,8 +923,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Are you able and willing to adjust your work hours or schedule in response to changing
-                        operational needs?</label>
+                    <p class="field-label">Are you able and willing to adjust your work hours or schedule in response to changing
+                        operational needs?</p>
                     <div class="radio-options-vertical">
                         <label class="radio-option">
                             <input type="radio" name="flexibleSchedule" value="Yes" required>
@@ -938,7 +938,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Are you legally authorized to work in this country?</label>
+                    <p class="field-label">Are you legally authorized to work in this country?</p>
                     <div class="radio-options-vertical">
                         <label class="radio-option">
                             <input type="radio" name="workAuthorization" value="Yes" required>
@@ -952,7 +952,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Are you willing to work on weekends or holidays if needed?</label>
+                    <p class="field-label">Are you willing to work on weekends or holidays if needed?</p>
                     <div class="radio-options-vertical">
                         <label class="radio-option">
                             <input type="radio" name="weekendAvailability" value="Yes" required>
@@ -966,7 +966,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Do you have reliable transportation to and from work?</label>
+                    <p class="field-label">Do you have reliable transportation to and from work?</p>
                     <div class="radio-options-vertical">
                         <label class="radio-option">
                             <input type="radio" name="reliableTransportation" value="Yes" required>
@@ -980,7 +980,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Have you ever been terminated from a job?</label>
+                    <p class="field-label">Have you ever been terminated from a job?</p>
                     <div class="radio-options-vertical">
                         <label class="radio-option">
                             <input type="radio" name="previousTermination" value="Yes" required>
@@ -1002,7 +1002,7 @@
 
                 <div class="form-group">
                     <label for="compensation">Expected compensation (PHP)</label>
-                    <input type="text" id="compensation" name="compensation" placeholder="e.g 15,000 - 30,000" required>
+                    <input type="text" id="compensation" name="compensation" placeholder="e.g 15,000 - 30,000" required autocomplete="off">
                 </div>
 
                 <div class="form-group">
@@ -1022,12 +1022,12 @@
 
                     <!-- Manual coordinates -->
                     <div class="coord-group">
-                        <label>Latitude</label>
+                        <label for="manualLat">Latitude</label>
                         <input type="number" id="manualLat" step="any" placeholder="Enter your latitude">
                     </div>
 
                     <div class="coord-group">
-                        <label>Longitude</label>
+                        <label for="manualLong">Longitude</label>
                         <input type="number" id="manualLong" step="any" placeholder="Enter your longitude">
                     </div>
 
@@ -1130,7 +1130,7 @@
 
     <script src="tracker.js"></script>
     <script src="script.js"></script>
-    <script src="chatbot.js?v=20260218d"></script>
+    <script src="chatbot.js?v=20260219a"></script>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1419,6 +1419,7 @@
 </body>
 
 </html>
+
 
 
 
