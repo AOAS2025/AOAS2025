@@ -8,73 +8,101 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin.css">
+  <link rel="stylesheet" href="/admin.css?v=20260224b">
 </head>
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
 
   <section id="loginScreen" class="login-screen">
-    <div class="login-card">
-      <div class="login-brand">
-        <p class="eyebrow">AOAS Internal</p>
-        <h1>CRM Control Center</h1>
-        <p>Manage participants, talent pools, and sub-accounts in one dashboard.</p>
+    <div class="login-layout">
+      <aside class="login-showcase">
+        <div class="showcase-brand">
+          <span class="brand-avatar">A</span>
+          <p class="eyebrow">AOAS Talent CRM</p>
+        </div>
+        <h1>Manage your talent pipeline <span>beautifully.</span></h1>
+        <p>Track participants, organize sections, and manage sub-accounts from one premium command center.</p>
+        <div class="showcase-tags">
+          <span>PARTICIPANTS</span>
+          <span>SECTIONS</span>
+          <span>ACCOUNTS</span>
+        </div>
+      </aside>
+
+      <div class="login-panel">
+        <div class="login-card">
+          <div class="login-brand">
+            <p class="eyebrow">Sign In</p>
+            <h2>Welcome back</h2>
+            <p>Enter your credentials to continue.</p>
+          </div>
+          <form id="loginForm" class="login-form">
+            <label>
+              Username
+              <input id="loginUsername" name="username" type="text" required maxlength="40" autocomplete="username" placeholder="Enter username">
+            </label>
+            <label>
+              Password
+              <input id="loginPassword" name="password" type="password" required maxlength="120" autocomplete="current-password" placeholder="Enter password">
+            </label>
+            <button type="submit" class="btn btn-primary">Continue</button>
+          </form>
+          <p class="hint">Default admin login: <code>admin</code> / <code>AOAS@2025</code></p>
+          <p id="loginMessage" class="message" role="status" aria-live="polite"></p>
+        </div>
       </div>
-      <form id="loginForm" class="login-form">
-        <label>
-          Username
-          <input id="loginUsername" name="username" type="text" required maxlength="40" autocomplete="username">
-        </label>
-        <label>
-          Password
-          <input id="loginPassword" name="password" type="password" required maxlength="120" autocomplete="current-password">
-        </label>
-        <button type="submit" class="btn btn-primary">Sign In</button>
-      </form>
-      <p class="hint">Default admin login: <code>admin</code> / <code>AOAS@2025</code></p>
-      <p id="loginMessage" class="message" role="status" aria-live="polite"></p>
     </div>
   </section>
 
   <div id="appShell" class="crm-shell" hidden>
     <aside class="sidebar">
       <div class="brand">
-        <p class="eyebrow">AOAS</p>
-        <h2>Talent CRM</h2>
+        <span class="brand-avatar">A</span>
+        <div class="brand-copy">
+          <h2>AOAS</h2>
+          <p>TALENT CRM</p>
+        </div>
       </div>
+      <p class="nav-heading">Navigation</p>
       <nav class="nav">
-        <button type="button" class="nav-btn active" data-view="overview">Overview</button>
-        <button type="button" class="nav-btn" data-view="participants">Participants</button>
-        <button type="button" class="nav-btn" data-view="sections">Talent Sections</button>
-        <button type="button" class="nav-btn" data-view="accounts">Sub Accounts</button>
+        <button type="button" class="nav-btn active" data-view="overview"><span class="nav-icon" aria-hidden="true">◫</span><span class="nav-text">Overview</span></button>
+        <button type="button" class="nav-btn" data-view="participants"><span class="nav-icon" aria-hidden="true">◌</span><span class="nav-text">Participants</span></button>
+        <button type="button" class="nav-btn" data-view="sections"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-text">Sections</span></button>
+        <button type="button" class="nav-btn" data-view="accounts"><span class="nav-icon" aria-hidden="true">◎</span><span class="nav-text">Accounts</span></button>
       </nav>
       <div class="sidebar-footer">
-        <p id="userBadge"></p>
-        <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
+        <p id="userBadge" class="user-badge"></p>
+        <button id="logoutBtn" class="btn btn-ghost" type="button">Sign out</button>
       </div>
     </aside>
 
     <div class="content-wrap">
       <header class="topbar card">
-        <div>
-          <p class="eyebrow">Dashboard</p>
-          <h3>Applicant Talent Pipeline</h3>
+        <div class="topbar-copy">
+          <h3 id="topbarTitle">Overview</h3>
+          <p id="topbarEyebrow" class="eyebrow">Applicant Talent Pipeline</p>
         </div>
-        <p id="globalMessage" class="message" role="status" aria-live="polite"></p>
+        <div class="topbar-meta">
+          <span class="version-chip">v1.0</span>
+          <p id="globalMessage" class="message" role="status" aria-live="polite"></p>
+        </div>
       </header>
 
       <main class="view-stack">
         <section id="view-overview" class="view active">
           <div class="stats-row">
             <article class="card stat-card">
+              <span class="stat-icon" aria-hidden="true">👥</span>
               <p>Participants</p>
               <strong id="statParticipants">0</strong>
             </article>
             <article class="card stat-card">
+              <span class="stat-icon" aria-hidden="true">▦</span>
               <p>Talent Sections</p>
               <strong id="statSections">0</strong>
             </article>
             <article class="card stat-card">
+              <span class="stat-icon" aria-hidden="true">◉</span>
               <p>Sub Accounts</p>
               <strong id="statAccounts">0</strong>
             </article>
@@ -84,6 +112,7 @@
             <article class="card">
               <div class="card-head">
                 <h4>Section Coverage</h4>
+                <span id="overviewSectionsMeta" class="head-meta"></span>
               </div>
               <div id="overviewSectionChips" class="chip-list"></div>
             </article>
@@ -91,6 +120,7 @@
             <article class="card">
               <div class="card-head">
                 <h4>Recently Updated</h4>
+                <span id="overviewRecentMeta" class="head-meta"></span>
               </div>
               <div id="overviewRecentList" class="compact-list"></div>
             </article>
@@ -102,7 +132,7 @@
             <div class="toolbar">
               <label>
                 Search
-                <input id="participantsSearch" type="text" placeholder="Name, skill, section, email">
+                <input id="participantsSearch" type="text" placeholder="Search by name, email, or skill">
               </label>
               <label>
                 Section
@@ -118,7 +148,7 @@
                   <option value="inactive">Inactive</option>
                 </select>
               </label>
-              <button id="createParticipantBtn" type="button" class="btn btn-primary">Add Participant</button>
+              <button id="createParticipantBtn" type="button" class="btn btn-primary">New Participant</button>
             </div>
 
             <div class="table-wrap">
@@ -268,6 +298,6 @@
     </div>
   </div>
 
-  <script src="/admin.js" defer></script>
+  <script src="/admin.js?v=20260224b" defer></script>
 </body>
 </html>

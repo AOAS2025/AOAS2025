@@ -37,6 +37,8 @@
     userBadge: document.getElementById('userBadge'),
     logoutBtn: document.getElementById('logoutBtn'),
     globalMessage: document.getElementById('globalMessage'),
+    topbarTitle: document.getElementById('topbarTitle'),
+    topbarEyebrow: document.getElementById('topbarEyebrow'),
 
     viewOverview: document.getElementById('view-overview'),
     viewParticipants: document.getElementById('view-participants'),
@@ -48,6 +50,8 @@
     statAccounts: document.getElementById('statAccounts'),
     overviewSectionChips: document.getElementById('overviewSectionChips'),
     overviewRecentList: document.getElementById('overviewRecentList'),
+    overviewSectionsMeta: document.getElementById('overviewSectionsMeta'),
+    overviewRecentMeta: document.getElementById('overviewRecentMeta'),
 
     participantsSearch: document.getElementById('participantsSearch'),
     participantsSectionFilter: document.getElementById('participantsSectionFilter'),
@@ -124,7 +128,7 @@
   function setMessage(target, text, isError) {
     if (!target) return;
     target.textContent = text || '';
-    target.style.color = isError ? '#dc2626' : '#5d6f8d';
+    target.style.color = isError ? '#ef4444' : '#64748b';
   }
 
   function setGlobalMessage(text, isError) {
@@ -241,11 +245,15 @@
 
   function renderUser() {
     if (!state.user) {
-      els.userBadge.textContent = '';
+      els.userBadge.innerHTML = '';
       return;
     }
     const roleText = state.user.role === 'admin' ? 'Admin' : 'Viewer';
-    els.userBadge.textContent = `${state.user.displayName || state.user.username} (${roleText})`;
+    const displayName = escapeHtml(state.user.displayName || state.user.username);
+    els.userBadge.innerHTML = `
+      <strong>${displayName}</strong>
+      <span>${escapeHtml(roleText)}</span>
+    `;
   }
 
   function renderSectionFilterOptions() {
@@ -271,11 +279,30 @@
       });
     });
 
+    if (els.overviewSectionsMeta) {
+      els.overviewSectionsMeta.textContent = `${state.sections.length} sections`;
+    }
+
     if (!state.sections.length) {
-      els.overviewSectionChips.innerHTML = '<p class="message">No sections yet.</p>';
+      els.overviewSectionChips.innerHTML = '<p class="message empty-state">No sections yet.</p>';
     } else {
+      const maxCount = Math.max(1, ...state.sections.map((section) => sectionCounts.get(section.id) || 0));
       els.overviewSectionChips.innerHTML = state.sections
-        .map((section) => `<span class="chip">${escapeHtml(section.name)} (${sectionCounts.get(section.id) || 0})</span>`)
+        .map((section) => {
+          const count = sectionCounts.get(section.id) || 0;
+          const ratio = count <= 0 ? 4 : Math.max(8, Math.round((count / maxCount) * 100));
+          return `
+            <div class="coverage-item">
+              <div class="coverage-top">
+                <strong>${escapeHtml(section.name)}</strong>
+                <span>${count}</span>
+              </div>
+              <div class="coverage-track">
+                <span style="width:${ratio}%"></span>
+              </div>
+            </div>
+          `;
+        })
         .join('');
     }
 
@@ -283,16 +310,23 @@
       .sort((a, b) => Date.parse(b.updatedAt || '') - Date.parse(a.updatedAt || ''))
       .slice(0, 8);
 
+    if (els.overviewRecentMeta) {
+      els.overviewRecentMeta.textContent = `${recent.length} recent`;
+    }
+
     if (!recent.length) {
-      els.overviewRecentList.innerHTML = '<p class="message">No participants added yet.</p>';
+      els.overviewRecentList.innerHTML = '<p class="message empty-state">No participants added yet.</p>';
       return;
     }
 
     els.overviewRecentList.innerHTML = recent
       .map((participant) => `
         <div class="compact-row">
-          <strong>${escapeHtml(participant.fullName || 'Unnamed')}</strong>
-          <span>${escapeHtml(statusLabel(participant.status))} • ${escapeHtml(formatDate(participant.updatedAt))}</span>
+          <div class="compact-main">
+            <strong>${escapeHtml(participant.fullName || 'Unnamed')}</strong>
+            <span class="compact-sub">${escapeHtml(statusLabel(participant.status))}</span>
+          </div>
+          <span>${escapeHtml(formatDate(participant.updatedAt))}</span>
         </div>
       `)
       .join('');
@@ -315,6 +349,14 @@
       .map((participant) => {
         const skills = (participant.skills || []).slice(0, 3);
         const sections = (participant.sections || []).map((sectionId) => sectionNameById(sectionId)).slice(0, 3);
+        const contactParts = [];
+        if (participant.contactNumber) {
+          contactParts.push(`<div>${escapeHtml(participant.contactNumber)}</div>`);
+        }
+        if (participant.email) {
+          contactParts.push(`<div>${escapeHtml(participant.email)}</div>`);
+        }
+        const contactMarkup = contactParts.length ? contactParts.join('') : '<span>-</span>';
         const actions = isAdmin()
           ? `
             <button type="button" class="btn btn-light" data-action="edit" data-id="${escapeHtml(participant.id)}">Edit</button>
@@ -330,26 +372,25 @@
 
         return `
           <tr>
-            <td><strong>${escapeHtml(participant.fullName || '')}</strong></td>
-            <td>
-              ${participant.contactNumber ? `<div>${escapeHtml(participant.contactNumber)}</div>` : ''}
-              ${participant.email ? `<div>${escapeHtml(participant.email)}</div>` : ''}
+            <td data-label="Name"><strong>${escapeHtml(participant.fullName || '')}</strong></td>
+            <td data-label="Contact">
+              ${contactMarkup}
             </td>
-            <td>
+            <td data-label="Skills">
               <div class="pill-group">
                 ${skills.length ? skills.map((skill) => `<span class="pill pill-skill">${escapeHtml(skill)}</span>`).join('') : '<span>-</span>'}
               </div>
             </td>
-            <td>
+            <td data-label="Sections">
               <div class="pill-group">
                 ${sections.length ? sections.map((name) => `<span class="pill pill-section">${escapeHtml(name)}</span>`).join('') : '<span>-</span>'}
               </div>
             </td>
-            <td>
+            <td data-label="Status">
               <span class="pill-status status-${escapeHtml(participant.status || 'talent_pool')}">${escapeHtml(statusLabel(participant.status))}</span>
             </td>
-            <td>${escapeHtml(formatDate(participant.updatedAt))}</td>
-            <td>
+            <td data-label="Updated">${escapeHtml(formatDate(participant.updatedAt))}</td>
+            <td data-label="Actions">
               <div class="pill-group">
                 ${actions}
                 ${resumeButton}
@@ -383,10 +424,10 @@
     els.sectionsTableBody.innerHTML = state.sections
       .map((section) => `
         <tr>
-          <td><strong>${escapeHtml(section.name)}</strong></td>
-          <td>${escapeHtml(section.description || '-')}</td>
-          <td>${counts.get(section.id) || 0}</td>
-          <td>
+          <td data-label="Section"><strong>${escapeHtml(section.name)}</strong></td>
+          <td data-label="Description">${escapeHtml(section.description || '-')}</td>
+          <td data-label="Participants">${counts.get(section.id) || 0}</td>
+          <td data-label="Actions">
             ${isAdmin() ? `
               <div class="pill-group">
                 <button type="button" class="btn btn-light" data-action="rename-section" data-id="${escapeHtml(section.id)}">Rename</button>
@@ -421,11 +462,11 @@
     els.accountsTableBody.innerHTML = state.accounts
       .map((account) => `
         <tr>
-          <td>@${escapeHtml(account.username)}</td>
-          <td>${escapeHtml(account.displayName || account.username)}</td>
-          <td>${account.isActive ? 'Active' : 'Inactive'}</td>
-          <td>${escapeHtml(formatDate(account.createdAt))}</td>
-          <td>
+          <td data-label="Username">@${escapeHtml(account.username)}</td>
+          <td data-label="Display Name">${escapeHtml(account.displayName || account.username)}</td>
+          <td data-label="Status">${account.isActive ? 'Active' : 'Inactive'}</td>
+          <td data-label="Created">${escapeHtml(formatDate(account.createdAt))}</td>
+          <td data-label="Actions">
             <div class="pill-group">
               <button type="button" class="btn btn-light" data-action="toggle-account" data-id="${escapeHtml(account.id)}">
                 ${account.isActive ? 'Disable' : 'Enable'}
@@ -506,10 +547,12 @@
 
   function showParticipantModal() {
     els.participantModal.hidden = false;
+    document.body.classList.add('admin-modal-open');
   }
 
   function hideParticipantModal() {
     els.participantModal.hidden = true;
+    document.body.classList.remove('admin-modal-open');
     state.editingParticipantId = '';
     state.resumeDraft = null;
     els.participantForm.reset();
@@ -631,10 +674,10 @@
 
   function renderView() {
     const views = [
-      { id: 'overview', el: els.viewOverview },
-      { id: 'participants', el: els.viewParticipants },
-      { id: 'sections', el: els.viewSections },
-      { id: 'accounts', el: els.viewAccounts },
+      { id: 'overview', el: els.viewOverview, title: 'Overview' },
+      { id: 'participants', el: els.viewParticipants, title: 'Participants' },
+      { id: 'sections', el: els.viewSections, title: 'Sections' },
+      { id: 'accounts', el: els.viewAccounts, title: 'Accounts' },
     ];
 
     views.forEach((view) => {
@@ -644,6 +687,14 @@
     els.navButtons.forEach((button) => {
       button.classList.toggle('active', button.getAttribute('data-view') === state.activeView);
     });
+
+    const activeView = views.find((view) => view.id === state.activeView);
+    if (activeView && els.topbarTitle) {
+      els.topbarTitle.textContent = activeView.title;
+    }
+    if (els.topbarEyebrow) {
+      els.topbarEyebrow.textContent = 'Applicant Talent Pipeline';
+    }
   }
 
   function applyRoleAccess() {
@@ -1048,6 +1099,11 @@
     els.participantModalBackdrop.addEventListener('click', hideParticipantModal);
     els.resumeFile.addEventListener('change', handleResumeFileChange);
     els.resumeMeta.addEventListener('click', handleResumeMetaClick);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !els.participantModal.hidden) {
+        hideParticipantModal();
+      }
+    });
   }
 
   function initialize() {
