@@ -4,7 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const { Resend } = require('resend');
 const { handleContactSubmission } = require('./lib/contact-handler');
-const { appendJsonLine, readJsonLines, buildMetricsFromRecords, sanitizeText } = require('./lib/inquiry-utils');
+const {
+  appendJsonLine,
+  readJsonLines,
+  buildMetricsFromRecords,
+  sanitizeText,
+  parseNotificationRecipients,
+} = require('./lib/inquiry-utils');
 const { computeRouteEstimate } = require('./lib/route-estimator');
 const {
   STATUS_OPTIONS,
@@ -27,6 +33,10 @@ const {
   createSubAccount,
   updateSubAccount,
   deleteSubAccount,
+  listClientRequests,
+  createClientRequest,
+  updateClientRequestStatus,
+  finalizeClientRequest,
 } = require('./lib/admin-crm');
 require('dotenv').config();
 
@@ -125,6 +135,183 @@ function toPublicUser(user) {
 
 function getEntityIdFromRequest(req) {
   return sanitizeText(req.params?.id || req.body?.id || req.query?.id || '', 120);
+}
+
+function escapeHtml(input) {
+  return String(input || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatDualTimestamp(isoValue) {
+  if (!isoValue) {
+    return {
+      au: 'Not set',
+      ph: 'Not set',
+    };
+  }
+
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) {
+    return {
+      au: 'Not set',
+      ph: 'Not set',
+    };
+  }
+
+  return {
+    au: new Intl.DateTimeFormat('en-AU', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Australia/Sydney',
+    }).format(date),
+    ph: new Intl.DateTimeFormat('en-PH', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Manila',
+    }).format(date),
+  };
+}
+
+function getNotificationRecipients() {
+  const recipients = parseNotificationRecipients();
+  if (recipients.length) {
+    return recipients;
+  }
+  return ['support@attainmentofficeadserv.org'];
+}
+
+function buildClientRequestEmailTemplate(request) {
+  const interviewTime = formatDualTimestamp(request.interviewDateTime);
+  const ceoMeetingTime = formatDualTimestamp(request.ceoMeetingDateTime);
+  const selectedProfiles = Array.isArray(request.selectedParticipants) ? request.selectedParticipants : [];
+  const profileRowsHtml = selectedProfiles.length
+    ? selectedProfiles.map((profile, index) => `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #dfe3e8;">${index + 1}</td>
+        <td style="padding: 8px; border: 1px solid #dfe3e8;">${escapeHtml(profile.fullName || 'Unnamed')}</td>
+        <td style="padding: 8px; border: 1px solid #dfe3e8;">${escapeHtml(profile.status || 'talent_pool')}</td>
+        <td style="padding: 8px; border: 1px solid #dfe3e8;">${escapeHtml(Array.isArray(profile.sections) ? profile.sections.join(', ') : '')}</td>
+      </tr>
+    `).join('')
+    : `
+      <tr>
+        <td colspan="4" style="padding: 8px; border: 1px solid #dfe3e8;">No selected profiles</td>
+      </tr>
+    `;
+
+  const subject = `Client request: ${request.clientName} (${selectedProfiles.length} selected profiles)`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 760px; margin: 0 auto; padding: 20px;">
+      <h2 style="margin: 0 0 14px 0; color: #0b5d44;">New Client Candidate Request</h2>
+      <p style="margin: 0 0 18px 0; color: #334155;">Request ID: <strong>${escapeHtml(request.id)}</strong></p>
+
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #dfe3e8; margin-bottom: 16px;">
+        <tbody>
+          <tr><td style="padding: 10px; border: 1px solid #dfe3e8; background: #f7faf9;"><strong>Client Name</strong></td><td style="padding: 10px; border: 1px solid #dfe3e8;">${escapeHtml(request.clientName)}</td></tr>
+          <tr><td style="padding: 10px; border: 1px solid #dfe3e8; background: #f7faf9;"><strong>Client Email</strong></td><td style="padding: 10px; border: 1px solid #dfe3e8;">${escapeHtml(request.clientEmail)}</td></tr>
+          <tr><td style="padding: 10px; border: 1px solid #dfe3e8; background: #f7faf9;"><strong>Company</strong></td><td style="padding: 10px; border: 1px solid #dfe3e8;">${escapeHtml(request.clientCompany || 'N/A')}</td></tr>
+          <tr><td style="padding: 10px; border: 1px solid #dfe3e8; background: #f7faf9;"><strong>Interview Schedule</strong></td><td style="padding: 10px; border: 1px solid #dfe3e8;">${escapeHtml(interviewTime.au)} (AU) | ${escapeHtml(interviewTime.ph)} (PH)</td></tr>
+          <tr><td style="padding: 10px; border: 1px solid #dfe3e8; background: #f7faf9;"><strong>CEO Meeting</strong></td><td style="padding: 10px; border: 1px solid #dfe3e8;">${escapeHtml(ceoMeetingTime.au)} (AU) | ${escapeHtml(ceoMeetingTime.ph)} (PH)</td></tr>
+          <tr><td style="padding: 10px; border: 1px solid #dfe3e8; background: #f7faf9;"><strong>CEO Included</strong></td><td style="padding: 10px; border: 1px solid #dfe3e8;">${request.ceoIncluded ? 'Yes' : 'No'}</td></tr>
+          <tr><td style="padding: 10px; border: 1px solid #dfe3e8; background: #f7faf9;"><strong>Status</strong></td><td style="padding: 10px; border: 1px solid #dfe3e8;">${escapeHtml(request.status || 'pending')}</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin: 0 0 8px 0; color: #0b5d44;">Message to Management</h3>
+      <div style="padding: 12px; border: 1px solid #dfe3e8; border-radius: 8px; background: #f7faf9; white-space: pre-wrap; margin-bottom: 16px;">${escapeHtml(request.requestMessage || 'No message')}</div>
+
+      <h3 style="margin: 0 0 8px 0; color: #0b5d44;">Selected Applicants</h3>
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #dfe3e8;">
+        <thead>
+          <tr>
+            <th style="padding: 8px; border: 1px solid #dfe3e8; text-align: left; background: #f7faf9;">#</th>
+            <th style="padding: 8px; border: 1px solid #dfe3e8; text-align: left; background: #f7faf9;">Name</th>
+            <th style="padding: 8px; border: 1px solid #dfe3e8; text-align: left; background: #f7faf9;">Status</th>
+            <th style="padding: 8px; border: 1px solid #dfe3e8; text-align: left; background: #f7faf9;">Sections</th>
+          </tr>
+        </thead>
+        <tbody>${profileRowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+
+  const text = `
+New Client Candidate Request
+
+Request ID: ${request.id}
+Client Name: ${request.clientName}
+Client Email: ${request.clientEmail}
+Company: ${request.clientCompany || 'N/A'}
+Interview Schedule: ${interviewTime.au} (AU) | ${interviewTime.ph} (PH)
+CEO Meeting: ${ceoMeetingTime.au} (AU) | ${ceoMeetingTime.ph} (PH)
+CEO Included: ${request.ceoIncluded ? 'Yes' : 'No'}
+Status: ${request.status || 'pending'}
+
+Message to Management:
+${request.requestMessage || 'No message'}
+
+Selected Applicants:
+${selectedProfiles.map((profile, index) => `${index + 1}. ${profile.fullName || 'Unnamed'} (${profile.status || 'talent_pool'})`).join('\n') || 'No selected profiles'}
+  `.trim();
+
+  return { subject, html, text };
+}
+
+function buildHiringFinalizedEmailTemplate(request, hiredProfiles) {
+  const selected = Array.isArray(hiredProfiles) ? hiredProfiles : [];
+  const subject = `Hiring finalized: ${request.clientName} (${selected.length} hired)`;
+  const rows = selected.length
+    ? selected.map((profile, index) => `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #dfe3e8;">${index + 1}</td>
+        <td style="padding: 8px; border: 1px solid #dfe3e8;">${escapeHtml(profile.participantName || profile.participantId || '')}</td>
+        <td style="padding: 8px; border: 1px solid #dfe3e8;">${escapeHtml(profile.clientName || request.clientName || '')}</td>
+        <td style="padding: 8px; border: 1px solid #dfe3e8;">${escapeHtml(profile.clientCompany || request.clientCompany || 'N/A')}</td>
+      </tr>
+    `).join('')
+    : `
+      <tr><td colspan="4" style="padding: 8px; border: 1px solid #dfe3e8;">No hired profiles listed</td></tr>
+    `;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 20px;">
+      <h2 style="margin: 0 0 14px 0; color: #0b5d44;">Client Hiring Finalization</h2>
+      <p style="margin: 0 0 12px 0; color: #334155;">Request ID: <strong>${escapeHtml(request.id)}</strong></p>
+      <p style="margin: 0 0 6px 0;"><strong>Client:</strong> ${escapeHtml(request.clientName || '')}</p>
+      <p style="margin: 0 0 6px 0;"><strong>Email:</strong> ${escapeHtml(request.clientEmail || '')}</p>
+      <p style="margin: 0 0 16px 0;"><strong>Company:</strong> ${escapeHtml(request.clientCompany || 'N/A')}</p>
+
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #dfe3e8;">
+        <thead>
+          <tr>
+            <th style="padding: 8px; border: 1px solid #dfe3e8; text-align: left; background: #f7faf9;">#</th>
+            <th style="padding: 8px; border: 1px solid #dfe3e8; text-align: left; background: #f7faf9;">Applicant</th>
+            <th style="padding: 8px; border: 1px solid #dfe3e8; text-align: left; background: #f7faf9;">Client</th>
+            <th style="padding: 8px; border: 1px solid #dfe3e8; text-align: left; background: #f7faf9;">Company</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const text = `
+Client Hiring Finalization
+
+Request ID: ${request.id}
+Client: ${request.clientName || ''}
+Email: ${request.clientEmail || ''}
+Company: ${request.clientCompany || 'N/A'}
+
+Hired Profiles:
+${selected.map((profile, index) => `${index + 1}. ${profile.participantName || profile.participantId || '-'} | ${profile.clientName || request.clientName || '-'} | ${profile.clientCompany || request.clientCompany || 'N/A'}`).join('\n') || 'No hired profiles listed'}
+  `.trim();
+
+  return { subject, html, text };
 }
 
 async function requireAuthenticatedUser(req, res) {
@@ -862,6 +1049,156 @@ app.delete(['/api/admin/accounts/:id', '/api/admin/accounts'], async (req, res) 
     await deleteSubAccount(accountId);
     res.json({
       success: true,
+    });
+  } catch (error) {
+    sendAdminError(res, error);
+  }
+});
+
+// Admin CRM: client requests (client-to-management workflow)
+app.get('/api/admin/client-requests', async (req, res) => {
+  try {
+    const user = await requireAuthenticatedUser(req, res);
+    if (!user) {
+      return;
+    }
+
+    const payload = await listClientRequests(user);
+    res.json({
+      success: true,
+      ...payload,
+    });
+  } catch (error) {
+    if (/crm tables are missing/i.test(String(error?.message || ''))) {
+      res.json({
+        success: true,
+        requests: [],
+        hiredProfiles: [],
+        warning: error.message,
+      });
+      return;
+    }
+    sendAdminError(res, error);
+  }
+});
+
+app.post('/api/admin/client-requests', async (req, res) => {
+  try {
+    const user = await requireAuthenticatedUser(req, res);
+    if (!user) {
+      return;
+    }
+
+    const requestRecord = await createClientRequest(req.body || {}, user);
+    let notificationSent = false;
+
+    if (resend && RESEND_API_KEY) {
+      try {
+        const template = buildClientRequestEmailTemplate(requestRecord);
+        const { error } = await resend.emails.send({
+          from: 'AOAS CRM <noreply@attainmentofficeadserv.org>',
+          to: getNotificationRecipients(),
+          reply_to: [requestRecord.clientEmail],
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
+        });
+
+        if (error) {
+          console.error('Client request notification failed:', JSON.stringify(error, null, 2));
+        } else {
+          notificationSent = true;
+        }
+      } catch (emailError) {
+        console.error('Client request notification error:', emailError.message || emailError);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      request: requestRecord,
+      notificationSent,
+    });
+  } catch (error) {
+    sendAdminError(res, error);
+  }
+});
+
+app.put('/api/admin/client-requests/:id/status', async (req, res) => {
+  try {
+    const user = await requireAdminUser(req, res);
+    if (!user) {
+      return;
+    }
+
+    const requestId = getEntityIdFromRequest(req);
+    if (!requestId) {
+      res.status(400).json({
+        success: false,
+        error: 'request id is required.',
+      });
+      return;
+    }
+
+    const requestRecord = await updateClientRequestStatus(requestId, req.body || {}, user);
+    res.json({
+      success: true,
+      request: requestRecord,
+    });
+  } catch (error) {
+    sendAdminError(res, error);
+  }
+});
+
+app.post('/api/admin/client-requests/:id/finalize', async (req, res) => {
+  try {
+    const user = await requireAuthenticatedUser(req, res);
+    if (!user) {
+      return;
+    }
+
+    const requestId = getEntityIdFromRequest(req);
+    if (!requestId) {
+      res.status(400).json({
+        success: false,
+        error: 'request id is required.',
+      });
+      return;
+    }
+
+    const result = await finalizeClientRequest(requestId, req.body || {}, user);
+    let notificationSent = false;
+
+    if (resend && RESEND_API_KEY) {
+      try {
+        const template = buildHiringFinalizedEmailTemplate(result.request, result.hiredProfiles || []);
+        const emailPayload = {
+          from: 'AOAS CRM <noreply@attainmentofficeadserv.org>',
+          to: getNotificationRecipients(),
+          subject: template.subject,
+          html: template.html,
+          text: template.text,
+        };
+        if (result.request?.clientEmail) {
+          emailPayload.reply_to = [result.request.clientEmail];
+        }
+        const { error } = await resend.emails.send(emailPayload);
+
+        if (error) {
+          console.error('Hiring finalized notification failed:', JSON.stringify(error, null, 2));
+        } else {
+          notificationSent = true;
+        }
+      } catch (emailError) {
+        console.error('Hiring finalized notification error:', emailError.message || emailError);
+      }
+    }
+
+    res.json({
+      success: true,
+      request: result.request,
+      hiredProfiles: result.hiredProfiles || [],
+      notificationSent,
     });
   } catch (error) {
     sendAdminError(res, error);

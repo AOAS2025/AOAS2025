@@ -118,11 +118,21 @@
             ],
         },
         {
+            id: 'hiring-status',
+            match: /\b(still hiring|currently hiring|are you hiring|hiring now|open positions?|vacancies?|job openings?|may opening pa)\b/i,
+            replies: [
+                'Thank you for your interest in AOAS. Hiring needs vary by role and current team requirements.',
+                'Please send your resume to support@attainmentofficeadserv.org so our recruitment team can review your profile.',
+                'We will inform you once there are open positions that align with your skills and experience.',
+            ],
+            intent: 'applicant',
+        },
+        {
             id: 'application-status',
             match: /\b(application status|status of my application|follow up my application|recruitment status)\b/i,
             replies: [
-                'For application status updates, please send your full name and email through the Careers channel so recruitment can verify your record.',
-                'If you prefer, leave your contact details here and we will relay your follow-up request internally.',
+                'For application status updates, please send your full name, email, and latest resume to support@attainmentofficeadserv.org.',
+                'Our recruitment team will review your details and update you when a matching opening is available.',
             ],
             intent: 'applicant',
         },
@@ -130,8 +140,9 @@
             id: 'applicant',
             match: /\b(apply|application|job|career|resume|cv|hiring|vacancy)\b/i,
             replies: [
-                'Thanks for your interest. For roles and applications, please use our Careers page so the recruitment team receives complete details.',
-                'You can also share your email here and we can direct you to the right application path.',
+                'Thank you for your interest in joining AOAS.',
+                'For applications, please visit our Careers page and send your resume to support@attainmentofficeadserv.org.',
+                'We will inform you once there are open positions that align with your skills and experience.',
             ],
             intent: 'applicant',
         },
@@ -179,7 +190,16 @@
         if (normalized.includes('data entry') || normalized.includes('data')) return 'data-entry';
         if (normalized.includes('ndis')) return 'ndis-admin';
         if (normalized.includes('customer service')) return 'customer-service';
-        if (normalized.includes('apply') || normalized.includes('job') || normalized.includes('career')) return 'applicant';
+        if (
+            normalized.includes('apply')
+            || normalized.includes('job')
+            || normalized.includes('career')
+            || normalized.includes('hiring')
+            || normalized.includes('vacancy')
+            || normalized.includes('resume')
+            || normalized.includes('cv')
+            || normalized.includes('position')
+        ) return 'applicant';
         if (normalized.includes('talk') || normalized.includes('human') || normalized.includes('agent')) return 'talk-human';
         return '';
     }
@@ -307,6 +327,7 @@
 
         let apiHintShown = false;
         let currentService = '';
+        let applicantMode = false;
         const transcript = [];
         let dragPointer = null;
         let dragTimer = null;
@@ -519,6 +540,19 @@
         }
 
         function showLeadForm(serviceKey = '') {
+            if (applicantMode) {
+                addMessage('bot', 'For job applications, please use our Careers page and send your resume to support@attainmentofficeadserv.org.');
+                setActionButtons([
+                    {
+                        label: 'Open Careers Page',
+                        onClick: () => {
+                            window.location.href = '/careers';
+                        },
+                    },
+                ]);
+                return;
+            }
+
             setLeadMode(true);
             if (serviceKey) {
                 currentService = serviceKey;
@@ -539,6 +573,7 @@
         function respondToService(serviceKey) {
             const service = SERVICES[serviceKey];
             if (!service) return;
+            setApplicantMode(false);
             currentService = serviceKey;
             addMessage('bot', service.summary);
             addMessage('bot', service.common);
@@ -559,6 +594,27 @@
                 { label: 'Customer Service', onClick: () => handleIntent('customer-service') },
                 { label: 'Talk to team', onClick: () => handleIntent('talk-human') },
             ]);
+        }
+
+        function setApplicantMode(enabled) {
+            applicantMode = Boolean(enabled);
+        }
+
+        function respondToApplicantIntent() {
+            setApplicantMode(true);
+            addMessage('bot', 'Thank you for your interest in joining AOAS.');
+            addMessage('bot', 'Hiring needs vary depending on current openings and team requirements.');
+            addMessage('bot', 'For applications, please visit our Careers page and send your resume to support@attainmentofficeadserv.org.');
+            addMessage('bot', 'We will inform you once there are open positions that align with your skills and experience.');
+            setActionButtons([
+                {
+                    label: 'Open Careers Page',
+                    onClick: () => {
+                        window.location.href = '/careers';
+                    },
+                },
+            ]);
+            track('chat_applicant_routed', { page: window.location.pathname });
         }
 
         function respondToSmallTalk(userText) {
@@ -587,38 +643,78 @@
         function respondFromScripts(userText) {
             for (const script of CONVERSATION_SCRIPTS) {
                 if (script.match.test(userText)) {
+                    if (script.intent === 'applicant') {
+                        handleIntent('applicant', { prefaceReplies: script.replies || [] });
+                        return true;
+                    }
+
+                    if (script.intent === 'talk-human' && applicantMode) {
+                        handleIntent('talk-human');
+                        return true;
+                    }
+
                     script.replies.forEach((line) => addMessage('bot', line));
                     if (script.intent) {
                         handleIntent(script.intent);
                         return true;
                     }
-                    setActionButtons([
-                        { label: 'Contact me', onClick: () => showLeadForm(currentService || 'general-admin') },
-                        { label: 'Talk to team', onClick: () => handleIntent('talk-human') },
-                    ]);
+                    if (applicantMode) {
+                        setActionButtons([
+                            {
+                                label: 'Open Careers Page',
+                                onClick: () => {
+                                    window.location.href = '/careers';
+                                },
+                            },
+                        ]);
+                    } else {
+                        setActionButtons([
+                            { label: 'Contact me', onClick: () => showLeadForm(currentService || 'general-admin') },
+                            { label: 'Talk to team', onClick: () => handleIntent('talk-human') },
+                        ]);
+                    }
                     return true;
                 }
             }
             return false;
         }
 
-        function handleIntent(intent) {
+        function handleIntent(intent, options = {}) {
             if (SERVICES[intent]) {
                 respondToService(intent);
                 return;
             }
 
             if (intent === 'applicant') {
-                addMessage('bot', 'Thanks for your interest in joining AOAS. For complete application details, please visit our Careers page.');
-                addMessage('bot', 'If you share your email here, our team can also send guidance on the right application path.');
-                setActionButtons([
-                    { label: 'Open Careers Page', onClick: () => { window.location.href = '/careers'; } },
-                    { label: 'Contact me', onClick: () => showLeadForm('general-admin') },
-                ]);
+                const prefaceReplies = Array.isArray(options.prefaceReplies) ? options.prefaceReplies : [];
+                if (prefaceReplies.length) {
+                    prefaceReplies.forEach((line) => addMessage('bot', line));
+                    setApplicantMode(true);
+                    setActionButtons([
+                        {
+                            label: 'Open Careers Page',
+                            onClick: () => {
+                                window.location.href = '/careers';
+                            },
+                        },
+                    ]);
+                    track('chat_applicant_routed', { page: window.location.pathname });
+                } else {
+                    respondToApplicantIntent();
+                }
                 return;
             }
 
             if (intent === 'talk-human') {
+                if (applicantMode) {
+                    addMessage('bot', 'For job applications and hiring inquiries, please use our Careers page and send your resume to support@attainmentofficeadserv.org.');
+                    addMessage('bot', 'Thank you for your interest. We will update you once a role aligned with your skills becomes available.');
+                    setActionButtons([
+                        { label: 'Open Careers Page', onClick: () => { window.location.href = '/careers'; } },
+                    ]);
+                    return;
+                }
+
                 addMessage('bot', 'You can reach our team at support@attainmentofficeadserv.org or +63 (032) 238-6354.');
                 addMessage('bot', 'If you prefer, share your details here and we will contact you directly.');
                 setActionButtons([

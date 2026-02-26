@@ -2101,7 +2101,7 @@ body::before {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 12px;
     margin-top: 8px;
-    align-items: start;
+    align-items: stretch;
 }
 
 .footer-column {
