@@ -1,4 +1,5 @@
 const { handleContactSubmission } = require('../lib/contact-handler');
+require('dotenv').config();
 
 function getRemoteIp(req) {
   const forwarded = req.headers['x-forwarded-for'];

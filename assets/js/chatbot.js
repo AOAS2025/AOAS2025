@@ -1,7 +1,9 @@
 (function aoasChatbot() {
     const CHAT_POSITION_KEY = 'aoas_chat_widget_position_v1';
+    const CHAT_LEAD_DRAFT_KEY = 'aoas_chat_lead_draft_v1';
     const CHAT_DRAG_HOLD_MS = 380;
     const CHAT_DRAG_MOVE_PX = 8;
+    const CHAT_EDGE_PADDING = 16;
 
     const SERVICES = {
         payroll: {
@@ -268,21 +270,29 @@
                         <option value="general-admin">General VA Support</option>
                         <option value="other">Other</option>
                     </select>
+                    <label for="chatLeadInquiryType">Reason for Contact</label>
+                    <select id="chatLeadInquiryType" required>
+                        <option value="" selected>Select reason</option>
+                        <option value="new-project">New Project</option>
+                        <option value="job-application">Job Application</option>
+                        <option value="general-inquiry">General Inquiry</option>
+                    </select>
                     <label for="chatLeadName">Name</label>
                     <input id="chatLeadName" type="text" required maxlength="120" autocomplete="name">
                     <label for="chatLeadEmail">Email</label>
                     <input id="chatLeadEmail" type="email" required maxlength="320" autocomplete="email">
                     <label for="chatLeadPhone">Phone (optional)</label>
                     <input id="chatLeadPhone" type="text" maxlength="50" autocomplete="tel">
-                    <label for="chatLeadLocation">Location</label>
+                    <label for="chatLeadLocation">Location (optional)</label>
                     <select id="chatLeadLocation">
-                        <option value="Australia" selected>Australia</option>
+                        <option value="" selected>Select location (optional)</option>
+                        <option value="Australia">Australia</option>
                         <option value="Philippines">Philippines</option>
                         <option value="Other">Other</option>
                     </select>
                     <div class="chat-other-location-wrap" id="chatOtherLocationWrap" hidden>
                         <label for="chatLeadLocationOther">Enter location</label>
-                        <input id="chatLeadLocationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="address-level2">
+                        <input id="chatLeadLocationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="off">
                     </div>
                     <label for="chatLeadMessage">Message</label>
                     <textarea id="chatLeadMessage" rows="3" required maxlength="1200" autocomplete="off"></textarea>
@@ -315,6 +325,7 @@
         const leadForm = widgetRoot.querySelector('#aoasChatLeadForm');
         const leadSubmitButton = widgetRoot.querySelector('#chatLeadSubmit');
         const leadService = widgetRoot.querySelector('#chatLeadService');
+        const leadInquiryType = widgetRoot.querySelector('#chatLeadInquiryType');
         const leadName = widgetRoot.querySelector('#chatLeadName');
         const leadEmail = widgetRoot.querySelector('#chatLeadEmail');
         const leadPhone = widgetRoot.querySelector('#chatLeadPhone');
@@ -334,6 +345,64 @@
         let dragPrimed = false;
         let isDragging = false;
         let suppressToggleClick = false;
+
+        function getLeadDraftStorageKey() {
+            return `${CHAT_LEAD_DRAFT_KEY}:${window.location.hostname}`;
+        }
+
+        function saveLeadDraft() {
+            try {
+                const payload = {
+                    v: 1,
+                    ts: Date.now(),
+                    values: {
+                        service: leadService.value || '',
+                        inquiryType: leadInquiryType.value || '',
+                        name: leadName.value || '',
+                        email: leadEmail.value || '',
+                        phone: leadPhone.value || '',
+                        location: leadLocation.value || '',
+                        locationOther: leadLocationOther.value || '',
+                        message: leadMessage.value || '',
+                        consent: Boolean(leadConsent.checked),
+                    },
+                };
+                window.localStorage.setItem(getLeadDraftStorageKey(), JSON.stringify(payload));
+            } catch {
+                // Ignore storage quota/privacy failures.
+            }
+        }
+
+        function restoreLeadDraft() {
+            try {
+                const raw = window.localStorage.getItem(getLeadDraftStorageKey());
+                if (!raw) return false;
+                const parsed = JSON.parse(raw);
+                const values = parsed && typeof parsed === 'object' ? parsed.values : null;
+                if (!values || typeof values !== 'object') return false;
+
+                if (typeof values.service === 'string') leadService.value = values.service;
+                if (typeof values.inquiryType === 'string') leadInquiryType.value = values.inquiryType;
+                if (typeof values.name === 'string') leadName.value = values.name;
+                if (typeof values.email === 'string') leadEmail.value = values.email;
+                if (typeof values.phone === 'string') leadPhone.value = values.phone;
+                if (typeof values.location === 'string') leadLocation.value = values.location;
+                if (typeof values.locationOther === 'string') leadLocationOther.value = values.locationOther;
+                if (typeof values.message === 'string') leadMessage.value = values.message;
+                leadConsent.checked = Boolean(values.consent);
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        function clearLeadDraft() {
+            try {
+                window.localStorage.removeItem(getLeadDraftStorageKey());
+            } catch {
+                // Ignore storage failures.
+            }
+        }
 
         function clamp(value, min, max) {
             return Math.min(max, Math.max(min, value));
@@ -370,10 +439,10 @@
             const rect = widgetRoot.getBoundingClientRect();
             const width = rect.width || 120;
             const height = rect.height || 52;
-            const maxLeft = Math.max(8, window.innerWidth - width - 8);
-            const maxTop = Math.max(8, window.innerHeight - height - 8);
-            const clampedLeft = clamp(left, 8, maxLeft);
-            const clampedTop = clamp(top, 8, maxTop);
+            const maxLeft = Math.max(CHAT_EDGE_PADDING, window.innerWidth - width - CHAT_EDGE_PADDING);
+            const maxTop = Math.max(CHAT_EDGE_PADDING, window.innerHeight - height - CHAT_EDGE_PADDING);
+            const clampedLeft = clamp(left, CHAT_EDGE_PADDING, maxLeft);
+            const clampedTop = clamp(top, CHAT_EDGE_PADDING, maxTop);
 
             widgetRoot.style.left = `${clampedLeft}px`;
             widgetRoot.style.top = `${clampedTop}px`;
@@ -524,12 +593,10 @@
         function toggleOtherLocationField() {
             const isOther = leadLocation.value === 'Other';
             leadLocationOtherWrap.hidden = !isOther;
-            if (isOther) {
-                leadLocationOther.required = true;
-            } else {
-                leadLocationOther.required = false;
+            if (!isOther) {
                 leadLocationOther.value = '';
             }
+            saveLeadDraft();
         }
 
         function setLeadMode(enabled) {
@@ -539,31 +606,25 @@
             panel.classList.toggle('lead-mode', enabled);
         }
 
-        function showLeadForm(serviceKey = '') {
-            if (applicantMode) {
-                addMessage('bot', 'For job applications, please use our Careers page and send your resume to support@attainmentofficeadserv.org.');
-                setActionButtons([
-                    {
-                        label: 'Open Careers Page',
-                        onClick: () => {
-                            window.location.href = '/careers';
-                        },
-                    },
-                ]);
-                return;
-            }
-
+        function showLeadForm(serviceKey = '', forcedInquiryType = '') {
             setLeadMode(true);
             if (serviceKey) {
                 currentService = serviceKey;
                 leadService.value = serviceKey;
             }
-            if (!leadMessage.value) {
-                const label = SERVICES[currentService]?.label || 'your requested service';
-                leadMessage.value = `I would like support for ${label}.`;
+
+            if (forcedInquiryType) {
+                leadInquiryType.value = forcedInquiryType;
+            } else if (applicantMode && !leadInquiryType.value) {
+                leadInquiryType.value = 'job-application';
             }
+
             toggleOtherLocationField();
-            track('chat_lead_form_opened', { service: serviceKey || 'unknown' });
+            saveLeadDraft();
+            track('chat_lead_form_opened', {
+                service: serviceKey || 'unknown',
+                inquiryType: leadInquiryType.value || '',
+            });
         }
 
         function hideLeadForm() {
@@ -611,6 +672,12 @@
                     label: 'Open Careers Page',
                     onClick: () => {
                         window.location.href = '/careers';
+                    },
+                },
+                {
+                    label: 'Contact recruitment',
+                    onClick: () => {
+                        showLeadForm(currentService || 'other', 'job-application');
                     },
                 },
             ]);
@@ -697,6 +764,12 @@
                                 window.location.href = '/careers';
                             },
                         },
+                        {
+                            label: 'Contact recruitment',
+                            onClick: () => {
+                                showLeadForm(currentService || 'other', 'job-application');
+                            },
+                        },
                     ]);
                     track('chat_applicant_routed', { page: window.location.pathname });
                 } else {
@@ -707,11 +780,8 @@
 
             if (intent === 'talk-human') {
                 if (applicantMode) {
-                    addMessage('bot', 'For job applications and hiring inquiries, please use our Careers page and send your resume to support@attainmentofficeadserv.org.');
-                    addMessage('bot', 'Thank you for your interest. We will update you once a role aligned with your skills becomes available.');
-                    setActionButtons([
-                        { label: 'Open Careers Page', onClick: () => { window.location.href = '/careers'; } },
-                    ]);
+                    addMessage('bot', 'For applications, you can use Careers or submit your details here for recruitment follow-up.');
+                    showLeadForm(currentService || 'other', 'job-application');
                     return;
                 }
 
@@ -757,8 +827,16 @@
             openChat();
         });
         closeButton.addEventListener('click', closeChat);
-        leadCancelButton?.addEventListener('click', hideLeadForm);
+        leadCancelButton?.addEventListener('click', () => {
+            saveLeadDraft();
+            hideLeadForm();
+        });
         leadLocation.addEventListener('change', toggleOtherLocationField);
+        leadForm.addEventListener('input', saveLeadDraft);
+        leadForm.addEventListener('change', saveLeadDraft);
+
+        restoreLeadDraft();
+        toggleOtherLocationField();
         applySavedPosition();
         bindDragBehavior();
 
@@ -789,15 +867,16 @@
         leadForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const service = leadService.value.trim();
+            const inquiryType = leadInquiryType.value.trim() || '';
             const name = leadName.value.trim();
             const email = leadEmail.value.trim();
             const message = leadMessage.value.trim();
             const phone = leadPhone.value.trim();
             const location = leadLocation.value === 'Other'
-                ? (leadLocationOther.value.trim() || 'Other')
+                ? leadLocationOther.value.trim()
                 : leadLocation.value;
 
-            if (!service || !name || !email || !message || !leadConsent.checked) {
+            if (!service || !inquiryType || !name || !email || !message || !leadConsent.checked) {
                 addMessage('bot', 'Please complete all required fields before submitting.');
                 return;
             }
@@ -813,6 +892,7 @@
                     body: JSON.stringify({
                         source: 'chat-widget',
                         service,
+                        inquiryType,
                         name,
                         email,
                         phone,
@@ -838,7 +918,8 @@
                 }
 
                 addMessage('bot', 'Thank you. We received your details and our team will reach out soon.');
-                track('chat_lead_submitted', { service });
+                track('chat_lead_submitted', { service, inquiryType });
+                clearLeadDraft();
                 leadForm.reset();
                 hideLeadForm();
                 toggleOtherLocationField();

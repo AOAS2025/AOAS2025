@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-AU">
 
 <head>
@@ -38,17 +38,16 @@
     <meta name="subject" content="Virtual administrative services for Australian businesses">
     <meta name="topic"
         content="Virtual Assistants, NDIS Support, Healthcare Administration, Business Process Outsourcing">
-    <meta name="aoas-hcaptcha-sitekey" content="">
 
     <title>AOAS | Virtual Assistants Australia & NDIS Admin Support | Attainment Office Administrative Services</title>
     <!-- Performance: Preload critical resources -->
-    <link rel="preload" href="/assets/css/style.css?v=20260224f" as="style">
-    <link rel="preload" href="/assets/js/script.js?v=20260223d" as="script">
+    <link rel="preload" href="/assets/css/style.css?v=20260304s" as="style">
+    <link rel="preload" href="/assets/js/script.js?v=20260304l" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260224f">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260304s">
     <!-- Favicon - Multiple formats for best crawler compatibility -->
     <link rel="icon" type="image/x-icon" href="/assets/icons/favicon.ico">
     <link rel="icon" type="image/ico" href="/assets/icons/favicon.ico">
@@ -482,7 +481,7 @@
         </div>
     </section>
 <!-- Core Values Section -->
-    <section class="section section-light">
+    <section class="section section-light core-values-section">
         <div class="container">
             <h2 class="section-title-center">CORE VALUES</h2>
 
@@ -948,6 +947,16 @@
                             </select>
                             <p class="form-hint">This helps us route your inquiry to the right team.</p>
                         </div>
+                        <div class="form-group">
+                            <label for="inquiryType">Reason for Contact <span class="required">(required)</span></label>
+                            <select id="inquiryType" name="inquiryType" required autocomplete="off">
+                                <option value="" selected>Select reason</option>
+                                <option value="new-project">New Project</option>
+                                <option value="job-application">Job Application</option>
+                                <option value="general-inquiry">General Inquiry</option>
+                            </select>
+                            <p class="form-hint">Helps us route your message to the correct team quickly.</p>
+                        </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="name">Name <span class="required">(required)</span></label>
@@ -964,15 +973,16 @@
                                 <input type="text" id="phone" name="phone" maxlength="50" autocomplete="tel">
                             </div>
                             <div class="form-group">
-                                <label for="location">Country / Location</label>
-                                <select id="location" name="location" autocomplete="country-name">
-                                    <option value="Australia" selected>Australia</option>
+                                <label for="location">Country / Location <span class="required">(optional)</span></label>
+                                <select id="location" name="location" autocomplete="off">
+                                    <option value="" selected>Select location (optional)</option>
+                                    <option value="Australia">Australia</option>
                                     <option value="Philippines">Philippines</option>
                                     <option value="Other">Other</option>
                                 </select>
                                 <div class="chat-other-location-wrap" id="contactOtherLocationWrap" hidden>
                                     <label for="locationOther">Enter location</label>
-                                    <input type="text" id="locationOther" name="locationOther" maxlength="120" autocomplete="address-level2"
+                                    <input type="text" id="locationOther" name="locationOther" maxlength="120" autocomplete="off"
                                         placeholder="City / Country">
                                 </div>
                             </div>
@@ -984,10 +994,6 @@
                         <div class="honeypot-field" aria-hidden="true">
                             <label for="website">Website</label>
                             <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
-                        </div>
-                        <div class="captcha-container" id="contactCaptchaContainer" hidden>
-                            <p class="captcha-label">Captcha <span class="required">(required)</span></p>
-                            <div id="contactCaptcha"></div>
                         </div>
                         <p class="privacy-note">By submitting, you agree to our follow-up regarding this inquiry.</p>
                         <input type="hidden" id="sourcePage" name="sourcePage">
@@ -1065,21 +1071,24 @@
                     <div class="footer-column">
                         <h4 class="footer-heading">ADDRESS</h4>
                         <p class="footer-text">
-                            Purok Mais, Brgy Paculob Dumanjug, Cebu 6035 PHILIPPINES
+                            Purok Mais, Brgy Paculob Dumanjug, Cebu
+                            <span class="footer-indent-line">6035 PHILIPPINES</span>
                         </p>
                     </div>
 
                     <div class="footer-column">
                         <h4 class="footer-heading">CALL US</h4>
                         <p class="footer-text">
-                            Book via Phone Call (032) 238-6354
+                            Book via Phone Call
+                            <span class="footer-indent-line">(032) 238-6354</span>
                         </p>
                     </div>
 
                     <div class="footer-column">
                         <h4 class="footer-heading">OPENING HOURS</h4>
                         <p class="footer-text">
-                            Monday To Friday 06:00 AM to 02:00 PM PH
+                            Monday To Friday
+                            <span class="footer-indent-line">06:00 AM to 02:00 PM PH TIME</span>
                         </p>
                     </div>
 
@@ -1155,9 +1164,10 @@
         </div>
     </div>
 
+    <script src="/assets/js/theme-toggle.js?v=20260304b"></script>
     <script src="/assets/js/tracker.js"></script>
-    <script src="/assets/js/script.js?v=20260223d"></script>
-    <script src="/assets/js/chatbot.js?v=20260224a"></script>
+    <script src="/assets/js/script.js?v=20260304l"></script>
+    <script src="/assets/js/chatbot.js?v=20260304f"></script>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Leaflet Routing Machine JS -->
@@ -1808,7 +1818,5 @@
 </body>
 
 </html>
-
-
 
 

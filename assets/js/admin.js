@@ -4,6 +4,13 @@
   const MAX_UPLOAD_BYTES = 7 * 1024 * 1024;
   const MAX_PROFILE_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
   const FILTER_DEBOUNCE_MS = 200;
+  const API_TIMEOUT_MS = 15000;
+  const LOGIN_RETRY_COOLDOWN_MS = 1200;
+  const AUTO_REFRESH_INTERVAL_MS = 5000;
+  const ACTION_NOTICE_SUCCESS_MS = 2400;
+  const ACTION_NOTICE_ERROR_MS = 4200;
+  const MIN_BACKGROUND_REFRESH_GAP_MS = 1800;
+  const LAZY_IMAGE_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
   const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || '';
 
   const state = {
@@ -19,6 +26,8 @@
       sections: 0,
       subAccounts: 0,
     },
+    sectionParticipantCounts: {},
+    recentParticipants: [],
     activeView: 'overview',
     editingParticipantId: '',
     profilePictureDraft: null,
@@ -31,18 +40,53 @@
       search: '',
       section: '',
       status: '',
+      page: 1,
+      pageSize: 20,
     },
+    participantPagination: {
+      page: 1,
+      pageSize: 20,
+      total: 0,
+      totalPages: 1,
+      hasPrev: false,
+      hasNext: false,
+    },
+    participantsLoading: false,
+    participantsRequestSeq: 0,
     clientPoolFilters: {
       search: '',
       section: '',
       status: '',
+      page: 1,
+      pageSize: 20,
     },
+    clientPoolParticipants: [],
+    clientPoolPagination: {
+      page: 1,
+      pageSize: 20,
+      total: 0,
+      totalPages: 1,
+      hasPrev: false,
+      hasNext: false,
+    },
+    clientPoolLoading: false,
+    clientPoolRequestSeq: 0,
     selectedClientParticipantIds: new Set(),
     searchDebounceHandle: 0,
     clientSearchDebounceHandle: 0,
     mobileNavOpen: false,
     theme: '',
     themeManual: savedTheme === 'light' || savedTheme === 'dark',
+    loginRequestInFlight: false,
+    nextLoginAttemptAt: 0,
+    refreshPromise: null,
+    autoRefreshTimer: 0,
+    autoRefreshInFlight: false,
+    lastRefreshAt: 0,
+    noticeAutoCloseHandle: 0,
+    actionDialogResolver: null,
+    actionDialogConfig: null,
+    participantAvatarObserver: null,
   };
 
   const els = {
@@ -51,6 +95,27 @@
     loginUsername: document.getElementById('loginUsername'),
     loginPassword: document.getElementById('loginPassword'),
     loginMessage: document.getElementById('loginMessage'),
+    loginSubmitBtn: document.querySelector('#loginForm button[type="submit"]'),
+    systemNoticeModal: document.getElementById('systemNoticeModal'),
+    systemNoticeBackdrop: document.getElementById('systemNoticeBackdrop'),
+    systemNoticeClose: document.getElementById('systemNoticeClose'),
+    systemNoticeTitle: document.getElementById('systemNoticeTitle'),
+    systemNoticeMessage: document.getElementById('systemNoticeMessage'),
+    systemActionModal: document.getElementById('systemActionModal'),
+    systemActionBackdrop: document.getElementById('systemActionBackdrop'),
+    systemActionClose: document.getElementById('systemActionClose'),
+    systemActionForm: document.getElementById('systemActionForm'),
+    systemActionTitle: document.getElementById('systemActionTitle'),
+    systemActionSubtitle: document.getElementById('systemActionSubtitle'),
+    systemActionMessage: document.getElementById('systemActionMessage'),
+    systemActionPrimaryField: document.getElementById('systemActionPrimaryField'),
+    systemActionPrimaryLabel: document.getElementById('systemActionPrimaryLabel'),
+    systemActionPrimaryInput: document.getElementById('systemActionPrimaryInput'),
+    systemActionSecondaryField: document.getElementById('systemActionSecondaryField'),
+    systemActionSecondaryLabel: document.getElementById('systemActionSecondaryLabel'),
+    systemActionSecondaryInput: document.getElementById('systemActionSecondaryInput'),
+    systemActionCancel: document.getElementById('systemActionCancel'),
+    systemActionConfirm: document.getElementById('systemActionConfirm'),
 
     appShell: document.getElementById('appShell'),
     appSidebar: document.getElementById('appSidebar'),
@@ -85,6 +150,11 @@
     participantsStatusFilter: document.getElementById('participantsStatusFilter'),
     createParticipantBtn: document.getElementById('createParticipantBtn'),
     participantsTableBody: document.getElementById('participantsTableBody'),
+    participantsPagination: document.getElementById('participantsPagination'),
+    participantsPrevPage: document.getElementById('participantsPrevPage'),
+    participantsNextPage: document.getElementById('participantsNextPage'),
+    participantsPageMeta: document.getElementById('participantsPageMeta'),
+    participantsPageSize: document.getElementById('participantsPageSize'),
 
     sectionForm: document.getElementById('sectionForm'),
     sectionName: document.getElementById('sectionName'),
@@ -103,6 +173,11 @@
     selectVisibleCandidatesBtn: document.getElementById('selectVisibleCandidatesBtn'),
     clearSelectedCandidatesBtn: document.getElementById('clearSelectedCandidatesBtn'),
     clientPoolTableBody: document.getElementById('clientPoolTableBody'),
+    clientPoolPagination: document.getElementById('clientPoolPagination'),
+    clientPoolPrevPage: document.getElementById('clientPoolPrevPage'),
+    clientPoolNextPage: document.getElementById('clientPoolNextPage'),
+    clientPoolPageMeta: document.getElementById('clientPoolPageMeta'),
+    clientPoolPageSize: document.getElementById('clientPoolPageSize'),
     clientSelectedMeta: document.getElementById('clientSelectedMeta'),
     clientRequestForm: document.getElementById('clientRequestForm'),
     clientRequestName: document.getElementById('clientRequestName'),
@@ -234,6 +309,287 @@
     setMessage(els.globalMessage, text, isError);
   }
 
+  function syncModalBodyLock() {
+    const participantOpen = Boolean(els.participantModal && !els.participantModal.hidden);
+    const noticeOpen = Boolean(els.systemNoticeModal && !els.systemNoticeModal.hidden);
+    const actionOpen = Boolean(els.systemActionModal && !els.systemActionModal.hidden);
+    document.body.classList.toggle('admin-modal-open', participantOpen || noticeOpen || actionOpen);
+  }
+
+  function hideSystemNotice() {
+    if (!els.systemNoticeModal) return;
+    if (state.noticeAutoCloseHandle) {
+      clearTimeout(state.noticeAutoCloseHandle);
+      state.noticeAutoCloseHandle = 0;
+    }
+    els.systemNoticeModal.hidden = true;
+    els.systemNoticeModal.removeAttribute('data-kind');
+    syncModalBodyLock();
+  }
+
+  function showSystemNotice(text, isError, options = {}) {
+    if (!els.systemNoticeModal || !els.systemNoticeTitle || !els.systemNoticeMessage) return;
+    const message = String(text || '').trim();
+    if (!message) return;
+
+    const title = String(options.title || (isError ? 'Action failed' : 'Action completed'));
+    const autoCloseMs = Number.isFinite(options.autoCloseMs) && options.autoCloseMs > 0
+      ? options.autoCloseMs
+      : (isError ? ACTION_NOTICE_ERROR_MS : ACTION_NOTICE_SUCCESS_MS);
+    const shouldAutoClose = options.autoClose !== false;
+
+    if (state.noticeAutoCloseHandle) {
+      clearTimeout(state.noticeAutoCloseHandle);
+      state.noticeAutoCloseHandle = 0;
+    }
+
+    els.systemNoticeTitle.textContent = title;
+    els.systemNoticeMessage.textContent = message;
+    els.systemNoticeModal.hidden = false;
+    els.systemNoticeModal.setAttribute('data-kind', isError ? 'error' : 'success');
+    syncModalBodyLock();
+
+    if (shouldAutoClose) {
+      state.noticeAutoCloseHandle = window.setTimeout(() => {
+        hideSystemNotice();
+      }, autoCloseMs);
+    }
+  }
+
+  function notifyAction(text, isError, options = {}) {
+    setGlobalMessage(text, isError);
+    showSystemNotice(text, isError, options);
+  }
+
+  function resolveActionDialog(result) {
+    if (!state.actionDialogResolver) return;
+    const resolver = state.actionDialogResolver;
+    state.actionDialogResolver = null;
+    state.actionDialogConfig = null;
+    resolver(result);
+  }
+
+  function hideActionDialog(result = null) {
+    if (!els.systemActionModal) return;
+    els.systemActionModal.hidden = true;
+    if (els.systemActionPrimaryInput) {
+      els.systemActionPrimaryInput.value = '';
+    }
+    if (els.systemActionSecondaryInput) {
+      els.systemActionSecondaryInput.value = '';
+    }
+    syncModalBodyLock();
+    resolveActionDialog(result);
+  }
+
+  function configureActionInput(fieldEl, labelEl, inputEl, config) {
+    if (!fieldEl || !labelEl || !inputEl) return;
+    if (!config) {
+      fieldEl.hidden = true;
+      inputEl.value = '';
+      return;
+    }
+
+    const label = String(config.label || 'Value').trim();
+    const inputType = String(config.type || 'text').toLowerCase();
+    labelEl.textContent = label;
+    inputEl.type = ['password', 'email', 'number', 'date'].includes(inputType) ? inputType : 'text';
+    inputEl.value = String(config.value || '');
+    inputEl.required = config.required === true;
+    inputEl.maxLength = Number.isInteger(config.maxLength) && config.maxLength > 0
+      ? config.maxLength
+      : 240;
+    inputEl.placeholder = String(config.placeholder || '');
+    fieldEl.hidden = false;
+  }
+
+  function showActionDialog(config = {}) {
+    if (!els.systemActionModal || !els.systemActionForm || !els.systemActionTitle) {
+      return Promise.resolve(null);
+    }
+
+    if (state.actionDialogResolver) {
+      resolveActionDialog(null);
+    }
+
+    const mode = config.mode === 'prompt' ? 'prompt' : 'confirm';
+    state.actionDialogConfig = {
+      mode,
+      primary: config.primary || null,
+      secondary: config.secondary || null,
+    };
+
+    els.systemActionTitle.textContent = String(config.title || (mode === 'prompt' ? 'Input required' : 'Confirm action'));
+    if (els.systemActionSubtitle) {
+      els.systemActionSubtitle.textContent = String(config.subtitle || (mode === 'prompt' ? 'Fill in required details' : 'Please confirm this request'));
+    }
+    if (els.systemActionMessage) {
+      els.systemActionMessage.textContent = String(config.message || '');
+    }
+
+    configureActionInput(
+      els.systemActionPrimaryField,
+      els.systemActionPrimaryLabel,
+      els.systemActionPrimaryInput,
+      mode === 'prompt' ? state.actionDialogConfig.primary : null,
+    );
+    configureActionInput(
+      els.systemActionSecondaryField,
+      els.systemActionSecondaryLabel,
+      els.systemActionSecondaryInput,
+      mode === 'prompt' ? state.actionDialogConfig.secondary : null,
+    );
+
+    const confirmText = String(config.confirmText || (mode === 'prompt' ? 'Save' : 'Confirm')).trim();
+    if (els.systemActionConfirm) {
+      els.systemActionConfirm.textContent = confirmText || (mode === 'prompt' ? 'Save' : 'Confirm');
+      els.systemActionConfirm.className = `btn ${config.danger ? 'btn-danger' : 'btn-primary'}`;
+    }
+    if (els.systemActionCancel) {
+      els.systemActionCancel.textContent = String(config.cancelText || 'Cancel');
+    }
+
+    els.systemActionModal.hidden = false;
+    syncModalBodyLock();
+
+    const focusTarget = (!els.systemActionPrimaryField?.hidden && els.systemActionPrimaryInput)
+      ? els.systemActionPrimaryInput
+      : els.systemActionConfirm;
+    if (focusTarget && typeof focusTarget.focus === 'function') {
+      window.setTimeout(() => focusTarget.focus(), 20);
+    }
+
+    return new Promise((resolve) => {
+      state.actionDialogResolver = resolve;
+    });
+  }
+
+  async function showSystemConfirmDialog(options = {}) {
+    const result = await showActionDialog({
+      mode: 'confirm',
+      title: options.title || 'Confirm action',
+      subtitle: options.subtitle || 'Please confirm to continue',
+      message: options.message || '',
+      confirmText: options.confirmText || 'Confirm',
+      cancelText: options.cancelText || 'Cancel',
+      danger: options.danger === true,
+    });
+    return result === true;
+  }
+
+  async function showSystemPromptDialog(options = {}) {
+    const result = await showActionDialog({
+      mode: 'prompt',
+      title: options.title || 'Input required',
+      subtitle: options.subtitle || 'Please complete this form',
+      message: options.message || '',
+      confirmText: options.confirmText || 'Save',
+      cancelText: options.cancelText || 'Cancel',
+      danger: options.danger === true,
+      primary: options.primary || null,
+      secondary: options.secondary || null,
+    });
+    return result && result.values ? result.values : null;
+  }
+
+  function handleActionDialogCancel() {
+    hideActionDialog(null);
+  }
+
+  function handleActionDialogSubmit(event) {
+    event.preventDefault();
+    const config = state.actionDialogConfig || {};
+    if (config.mode !== 'prompt') {
+      hideActionDialog(true);
+      return;
+    }
+
+    const primaryInput = els.systemActionPrimaryInput;
+    const secondaryInput = els.systemActionSecondaryInput;
+    const primaryRequired = Boolean(config.primary && config.primary.required === true);
+    const secondaryRequired = Boolean(config.secondary && config.secondary.required === true);
+
+    const primaryValue = String(primaryInput?.value || '').trim();
+    const secondaryValue = String(secondaryInput?.value || '').trim();
+
+    if (primaryRequired && !primaryValue) {
+      if (primaryInput) {
+        primaryInput.focus();
+        primaryInput.reportValidity();
+      }
+      return;
+    }
+
+    if (secondaryRequired && !secondaryValue) {
+      if (secondaryInput) {
+        secondaryInput.focus();
+        secondaryInput.reportValidity();
+      }
+      return;
+    }
+
+    hideActionDialog({
+      values: {
+        primary: primaryValue,
+        secondary: secondaryValue,
+      },
+    });
+  }
+
+  function stopAutoRefresh() {
+    if (state.autoRefreshTimer) {
+      clearInterval(state.autoRefreshTimer);
+      state.autoRefreshTimer = 0;
+    }
+    state.autoRefreshInFlight = false;
+  }
+
+  function shouldAutoRefreshNow() {
+    if (!state.token || els.appShell.hidden) return false;
+    if (document.visibilityState === 'hidden') return false;
+    if (state.loginRequestInFlight) return false;
+    if (els.participantModal && !els.participantModal.hidden) return false;
+    if (els.systemActionModal && !els.systemActionModal.hidden) return false;
+    return true;
+  }
+
+  async function refreshInBackground() {
+    if (!shouldAutoRefreshNow()) return;
+    if (state.autoRefreshInFlight || state.refreshPromise) return;
+    if (Date.now() - state.lastRefreshAt < MIN_BACKGROUND_REFRESH_GAP_MS) return;
+
+    state.autoRefreshInFlight = true;
+    try {
+      await loadDashboardData(getLoadOptionsForView(state.activeView));
+      state.lastRefreshAt = Date.now();
+    } catch (error) {
+      console.warn('Background refresh failed:', error?.message || error);
+    } finally {
+      state.autoRefreshInFlight = false;
+    }
+  }
+
+  function startAutoRefresh() {
+    stopAutoRefresh();
+    if (!state.token) return;
+    state.autoRefreshTimer = window.setInterval(() => {
+      void refreshInBackground();
+    }, AUTO_REFRESH_INTERVAL_MS);
+  }
+
+  function setLoginPending(isPending) {
+    const pending = Boolean(isPending);
+    if (els.loginSubmitBtn) {
+      els.loginSubmitBtn.disabled = pending;
+    }
+    if (els.loginUsername) {
+      els.loginUsername.disabled = pending;
+    }
+    if (els.loginPassword) {
+      els.loginPassword.disabled = pending;
+    }
+  }
+
   function normalizeTheme(value) {
     return value === 'dark' ? 'dark' : 'light';
   }
@@ -268,8 +624,7 @@
       return;
     }
 
-    const fromSystem = SYSTEM_THEME_QUERY.matches ? 'dark' : 'light';
-    applyTheme(fromSystem);
+    applyTheme('dark');
   }
 
   function handleThemeToggle() {
@@ -320,6 +675,9 @@
 
   function showLogin() {
     closeMobileNav();
+    stopAutoRefresh();
+    hideSystemNotice();
+    hideActionDialog(null);
     els.loginScreen.hidden = false;
     els.appShell.hidden = true;
   }
@@ -328,6 +686,7 @@
     els.loginScreen.hidden = true;
     els.appShell.hidden = false;
     closeMobileNav();
+    startAutoRefresh();
   }
 
   function setAuthToken(token) {
@@ -344,12 +703,43 @@
     state.user = null;
     state.sections = [];
     state.participants = [];
+    state.clientPoolParticipants = [];
     state.accounts = [];
     state.clientRequests = [];
     state.hiredProfiles = [];
+    state.sectionParticipantCounts = {};
+    state.recentParticipants = [];
+    state.participantPagination = {
+      page: 1,
+      pageSize: state.participantFilters.pageSize || 20,
+      total: 0,
+      totalPages: 1,
+      hasPrev: false,
+      hasNext: false,
+    };
+    state.clientPoolPagination = {
+      page: 1,
+      pageSize: state.clientPoolFilters.pageSize || 20,
+      total: 0,
+      totalPages: 1,
+      hasPrev: false,
+      hasNext: false,
+    };
     state.selectedClientParticipantIds = new Set();
     state.participantMetaExpanded.skills = new Set();
     state.participantMetaExpanded.sections = new Set();
+    state.loginRequestInFlight = false;
+    state.nextLoginAttemptAt = 0;
+    state.participantsRequestSeq = 0;
+    state.clientPoolRequestSeq = 0;
+    disconnectParticipantAvatarObserver();
+    setLoginPending(false);
+    stopAutoRefresh();
+    hideSystemNotice();
+    hideActionDialog(null);
+    if (els.participantModal && !els.participantModal.hidden) {
+      hideParticipantModal();
+    }
     showLogin();
   }
 
@@ -410,33 +800,74 @@
   }
 
   async function fetchApi(path, options) {
-    const response = await fetch(path, {
-      method: options.method || 'GET',
-      headers: options.headers || requestHeaders(),
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    });
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
+      ? options.timeoutMs
+      : API_TIMEOUT_MS;
+    const timeoutHandle = controller
+      ? window.setTimeout(() => controller.abort(), timeoutMs)
+      : 0;
 
-    let payload = {};
     try {
-      payload = await response.json();
-    } catch {
-      payload = {};
-    }
+      const response = await fetch(path, {
+        method: options.method || 'GET',
+        headers: options.headers || requestHeaders(),
+        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+        signal: controller ? controller.signal : undefined,
+      });
 
-    return { response, payload };
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch {
+        payload = {};
+      }
+
+      return { response, payload };
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        const timeoutError = new Error('Request timed out. Please try again.');
+        timeoutError.status = 408;
+        throw timeoutError;
+      }
+      throw error;
+    } finally {
+      if (controller && timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    }
   }
 
   async function api(path, options = {}) {
     const normalizedPath = normalizeApiPath(path);
     const method = String(options.method || 'GET').toUpperCase();
 
-    let { response, payload } = await fetchApi(normalizedPath, options);
+    let response;
+    let payload;
+    try {
+      const first = await fetchApi(normalizedPath, options);
+      response = first.response;
+      payload = first.payload;
+    } catch (error) {
+      if (error && typeof error === 'object' && !Number.isInteger(error.status)) {
+        error.status = 0;
+      }
+      throw error;
+    }
+
     if (response.status === 404 && method === 'GET' && normalizedPath.startsWith('/api/')) {
       const fallbackPath = addTrailingSlash(normalizedPath);
       if (fallbackPath !== normalizedPath) {
-        const retry = await fetchApi(fallbackPath, options);
-        response = retry.response;
-        payload = retry.payload;
+        try {
+          const retry = await fetchApi(fallbackPath, options);
+          response = retry.response;
+          payload = retry.payload;
+        } catch (error) {
+          if (error && typeof error === 'object' && !Number.isInteger(error.status)) {
+            error.status = 0;
+          }
+          throw error;
+        }
       }
     }
 
@@ -449,45 +880,212 @@
     return payload;
   }
 
+  function normalizePaginationMeta(raw, fallbackPage, fallbackPageSize, rowCountFallback = 0) {
+    const pageSize = Number.parseInt(String(raw?.pageSize ?? fallbackPageSize), 10);
+    const safePageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : fallbackPageSize;
+    const total = Number.parseInt(String(raw?.total ?? rowCountFallback), 10);
+    const safeTotal = Number.isInteger(total) && total >= 0 ? total : rowCountFallback;
+    const totalPagesRaw = Number.parseInt(String(raw?.totalPages ?? 0), 10);
+    const totalPages = Number.isInteger(totalPagesRaw) && totalPagesRaw > 0
+      ? totalPagesRaw
+      : Math.max(1, Math.ceil(safeTotal / safePageSize));
+    const pageRaw = Number.parseInt(String(raw?.page ?? fallbackPage), 10);
+    const page = Number.isInteger(pageRaw) && pageRaw > 0
+      ? Math.min(pageRaw, totalPages)
+      : Math.min(fallbackPage, totalPages);
+
+    return {
+      page,
+      pageSize: safePageSize,
+      total: safeTotal,
+      totalPages,
+      hasPrev: page > 1,
+      hasNext: page < totalPages,
+    };
+  }
+
+  function disconnectParticipantAvatarObserver() {
+    if (state.participantAvatarObserver) {
+      state.participantAvatarObserver.disconnect();
+      state.participantAvatarObserver = null;
+    }
+  }
+
+  function activateLazyParticipantAvatar(image) {
+    if (!image) return;
+    const source = String(image.getAttribute('data-src') || '').trim();
+    if (!source) return;
+    image.setAttribute('src', source);
+    image.removeAttribute('data-src');
+    image.classList.remove('participant-avatar-lazy');
+  }
+
+  function hydrateLazyParticipantAvatars() {
+    disconnectParticipantAvatarObserver();
+
+    if (!els.participantsTableBody) return;
+    const lazyImages = Array.from(
+      els.participantsTableBody.querySelectorAll('img.participant-avatar-lazy[data-src]'),
+    );
+    if (!lazyImages.length) return;
+
+    if (typeof IntersectionObserver !== 'function') {
+      lazyImages.forEach((image) => activateLazyParticipantAvatar(image));
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const image = entry.target;
+        activateLazyParticipantAvatar(image);
+        observer.unobserve(image);
+      });
+    }, {
+      root: null,
+      rootMargin: '180px 0px',
+      threshold: 0.01,
+    });
+
+    lazyImages.forEach((image) => observer.observe(image));
+    state.participantAvatarObserver = observer;
+  }
+
+  function deriveOverviewDataFromParticipants(participants) {
+    const rows = Array.isArray(participants) ? participants : [];
+    const sectionCounts = {};
+
+    rows.forEach((participant) => {
+      const sections = Array.isArray(participant.sections) ? participant.sections : [];
+      sections.forEach((sectionId) => {
+        const key = String(sectionId || '').trim();
+        if (!key) return;
+        sectionCounts[key] = (sectionCounts[key] || 0) + 1;
+      });
+    });
+
+    const recentParticipants = rows
+      .slice()
+      .sort((a, b) => {
+        const left = Date.parse(a?.updatedAt || '') || 0;
+        const right = Date.parse(b?.updatedAt || '') || 0;
+        return right - left;
+      })
+      .slice(0, 8)
+      .map((participant) => ({
+        id: String(participant?.id || ''),
+        fullName: String(participant?.fullName || ''),
+        status: String(participant?.status || 'talent_pool'),
+        updatedAt: participant?.updatedAt || '',
+      }))
+      .filter((participant) => participant.id);
+
+    return { sectionCounts, recentParticipants };
+  }
+
+  function buildParticipantsApiPath() {
+    const params = new URLSearchParams();
+    const search = String(state.participantFilters.search || '').trim();
+    const section = String(state.participantFilters.section || '').trim();
+    const status = String(state.participantFilters.status || '').trim();
+    const page = Number.parseInt(String(state.participantFilters.page || 1), 10);
+    const pageSize = Number.parseInt(String(state.participantFilters.pageSize || 20), 10);
+
+    if (search) params.set('search', search);
+    if (section) params.set('section', section);
+    if (status) params.set('status', status);
+    params.set('page', String(Number.isInteger(page) && page > 0 ? page : 1));
+    params.set('pageSize', String(Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 20));
+
+    return `/api/admin/participants?${params.toString()}`;
+  }
+
+  async function loadParticipantsPage() {
+    const requestSeq = state.participantsRequestSeq + 1;
+    state.participantsRequestSeq = requestSeq;
+    state.participantsLoading = true;
+    try {
+      const response = await api(buildParticipantsApiPath());
+      if (requestSeq !== state.participantsRequestSeq) {
+        return;
+      }
+      const rows = Array.isArray(response.participants) ? response.participants : [];
+      state.participants = rows;
+      state.participantPagination = normalizePaginationMeta(
+        response.pagination || {},
+        state.participantFilters.page,
+        state.participantFilters.pageSize,
+        rows.length,
+      );
+      state.participantFilters.page = state.participantPagination.page;
+      state.participantFilters.pageSize = state.participantPagination.pageSize;
+      if (els.participantsPageSize) {
+        els.participantsPageSize.value = String(state.participantPagination.pageSize);
+      }
+    } finally {
+      if (requestSeq === state.participantsRequestSeq) {
+        state.participantsLoading = false;
+      }
+    }
+  }
+
+  function buildClientPoolApiPath() {
+    const params = new URLSearchParams();
+    const search = String(state.clientPoolFilters.search || '').trim();
+    const section = String(state.clientPoolFilters.section || '').trim();
+    const status = String(state.clientPoolFilters.status || '').trim();
+    const page = Number.parseInt(String(state.clientPoolFilters.page || 1), 10);
+    const pageSize = Number.parseInt(String(state.clientPoolFilters.pageSize || 20), 10);
+
+    if (search) params.set('search', search);
+    if (section) params.set('section', section);
+    if (status) {
+      params.set('status', status);
+    } else {
+      params.set('statusSet', 'shortlisted,talent_pool');
+    }
+    params.set('page', String(Number.isInteger(page) && page > 0 ? page : 1));
+    params.set('pageSize', String(Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 20));
+
+    return `/api/admin/participants?${params.toString()}`;
+  }
+
+  async function loadClientPoolPage() {
+    const requestSeq = state.clientPoolRequestSeq + 1;
+    state.clientPoolRequestSeq = requestSeq;
+    state.clientPoolLoading = true;
+    try {
+      const response = await api(buildClientPoolApiPath());
+      if (requestSeq !== state.clientPoolRequestSeq) {
+        return;
+      }
+      const rows = Array.isArray(response.participants) ? response.participants : [];
+      state.clientPoolParticipants = rows;
+      state.clientPoolPagination = normalizePaginationMeta(
+        response.pagination || {},
+        state.clientPoolFilters.page,
+        state.clientPoolFilters.pageSize,
+        rows.length,
+      );
+      state.clientPoolFilters.page = state.clientPoolPagination.page;
+      state.clientPoolFilters.pageSize = state.clientPoolPagination.pageSize;
+      if (els.clientPoolPageSize) {
+        els.clientPoolPageSize.value = String(state.clientPoolPagination.pageSize);
+      }
+    } finally {
+      if (requestSeq === state.clientPoolRequestSeq) {
+        state.clientPoolLoading = false;
+      }
+    }
+  }
+
   function sectionNameById(sectionId) {
     const section = state.sections.find((entry) => entry.id === sectionId);
     return section ? section.name : sectionId;
   }
 
   function getFilteredParticipants() {
-    const search = state.participantFilters.search.toLowerCase();
-    const section = state.participantFilters.section.toLowerCase();
-    const status = state.participantFilters.status.toLowerCase();
-
-    return state.participants.filter((participant) => {
-      if (section && (!Array.isArray(participant.sections) || !participant.sections.includes(section))) {
-        return false;
-      }
-
-      if (status && String(participant.status || '').toLowerCase() !== status) {
-        return false;
-      }
-
-      if (!search) {
-        return true;
-      }
-
-      const blob = [
-        participant.fullName,
-        participant.contactNumber,
-        participant.email,
-        participant.gender,
-        participant.address,
-        participant.notes,
-        ...(Array.isArray(participant.skills) ? participant.skills : []),
-        ...(Array.isArray(participant.sections) ? participant.sections.map((id) => sectionNameById(id)) : []),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-
-      return blob.includes(search);
-    });
+    return Array.isArray(state.participants) ? state.participants : [];
   }
 
   function renderStats() {
@@ -567,45 +1165,24 @@
   }
 
   function getClientPoolParticipants() {
-    const search = String(state.clientPoolFilters.search || '').toLowerCase();
-    const sectionFilter = String(state.clientPoolFilters.section || '').toLowerCase();
-    const statusFilter = String(state.clientPoolFilters.status || '').toLowerCase();
-
-    return state.participants.filter((participant) => {
-      const status = String(participant.status || '').toLowerCase();
-      const sectionIds = Array.isArray(participant.sections) ? participant.sections : [];
-
-      if (sectionFilter && !sectionIds.includes(sectionFilter)) {
-        return false;
-      }
-
-      if (statusFilter) {
-        if (status !== statusFilter) return false;
-      } else if (!['shortlisted', 'talent_pool'].includes(status)) {
-        return false;
-      }
-
-      if (!search) {
-        return true;
-      }
-
-      const haystack = [
-        participant.fullName,
-        participant.email,
-        participant.contactNumber,
-        ...(Array.isArray(participant.skills) ? participant.skills : []),
-        ...sectionIds.map((id) => sectionNameById(id)),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-
-      return haystack.includes(search);
-    });
+    return Array.isArray(state.clientPoolParticipants) ? state.clientPoolParticipants : [];
   }
 
   function renderClientPoolTable() {
     if (!els.clientPoolTableBody) return;
+
+    if (state.clientPoolLoading) {
+      els.clientPoolTableBody.innerHTML = `
+        <tr>
+          <td colspan="5">
+            <p class="message">Loading candidate profiles...</p>
+          </td>
+        </tr>
+      `;
+      renderClientPoolPagination();
+      updateClientSelectedMeta();
+      return;
+    }
 
     const filtered = getClientPoolParticipants();
     if (!filtered.length) {
@@ -616,6 +1193,7 @@
           </td>
         </tr>
       `;
+      renderClientPoolPagination();
       updateClientSelectedMeta();
       return;
     }
@@ -648,7 +1226,44 @@
       })
       .join('');
 
+    renderClientPoolPagination();
     updateClientSelectedMeta();
+  }
+
+  function renderClientPoolPagination() {
+    if (!els.clientPoolPagination || !els.clientPoolPageMeta) return;
+
+    const pageMeta = state.clientPoolPagination || {
+      page: 1,
+      pageSize: state.clientPoolFilters.pageSize || 20,
+      total: 0,
+      totalPages: 1,
+      hasPrev: false,
+      hasNext: false,
+    };
+
+    const total = Number.parseInt(String(pageMeta.total || 0), 10) || 0;
+    const page = Number.parseInt(String(pageMeta.page || 1), 10) || 1;
+    const pageSize = Number.parseInt(String(pageMeta.pageSize || 20), 10) || 20;
+    const totalPages = Number.parseInt(String(pageMeta.totalPages || 1), 10) || 1;
+    const start = total > 0 ? ((page - 1) * pageSize) + 1 : 0;
+    const end = total > 0 ? Math.min(total, page * pageSize) : 0;
+
+    els.clientPoolPagination.hidden = false;
+    els.clientPoolPageMeta.textContent = `${start}-${end} of ${total} (Page ${page} / ${totalPages})`;
+    if (els.clientPoolPrevPage) {
+      els.clientPoolPrevPage.disabled = state.clientPoolLoading || !pageMeta.hasPrev;
+    }
+    if (els.clientPoolNextPage) {
+      els.clientPoolNextPage.disabled = state.clientPoolLoading || !pageMeta.hasNext;
+    }
+    if (els.clientPoolPageSize) {
+      const expectedValue = String(pageSize);
+      if (els.clientPoolPageSize.value !== expectedValue) {
+        els.clientPoolPageSize.value = expectedValue;
+      }
+      els.clientPoolPageSize.disabled = state.clientPoolLoading;
+    }
   }
 
   function renderClientRequests() {
@@ -763,10 +1378,8 @@
 
   function renderOverview() {
     const sectionCounts = new Map();
-    state.participants.forEach((participant) => {
-      (participant.sections || []).forEach((sectionId) => {
-        sectionCounts.set(sectionId, (sectionCounts.get(sectionId) || 0) + 1);
-      });
+    Object.entries(state.sectionParticipantCounts || {}).forEach(([sectionId, count]) => {
+      sectionCounts.set(sectionId, Number.parseInt(String(count || 0), 10) || 0);
     });
 
     if (els.overviewSectionsMeta) {
@@ -796,9 +1409,9 @@
         .join('');
     }
 
-    const recent = [...state.participants]
-      .sort((a, b) => Date.parse(b.updatedAt || '') - Date.parse(a.updatedAt || ''))
-      .slice(0, 8);
+    const recent = Array.isArray(state.recentParticipants)
+      ? state.recentParticipants.slice(0, 8)
+      : [];
 
     if (els.overviewRecentMeta) {
       els.overviewRecentMeta.textContent = `${recent.length} recent`;
@@ -822,16 +1435,67 @@
       .join('');
   }
 
+  function renderParticipantsPagination() {
+    if (!els.participantsPagination || !els.participantsPageMeta) return;
+
+    const pageMeta = state.participantPagination || {
+      page: 1,
+      pageSize: state.participantFilters.pageSize || 20,
+      total: state.participants.length,
+      totalPages: 1,
+      hasPrev: false,
+      hasNext: false,
+    };
+
+    const total = Number.parseInt(String(pageMeta.total || 0), 10) || 0;
+    const page = Number.parseInt(String(pageMeta.page || 1), 10) || 1;
+    const pageSize = Number.parseInt(String(pageMeta.pageSize || 20), 10) || 20;
+    const totalPages = Number.parseInt(String(pageMeta.totalPages || 1), 10) || 1;
+    const start = total > 0 ? ((page - 1) * pageSize) + 1 : 0;
+    const end = total > 0 ? Math.min(total, page * pageSize) : 0;
+
+    els.participantsPagination.hidden = false;
+    els.participantsPageMeta.textContent = `${start}-${end} of ${total} (Page ${page} / ${totalPages})`;
+    if (els.participantsPrevPage) {
+      els.participantsPrevPage.disabled = state.participantsLoading || !pageMeta.hasPrev;
+    }
+    if (els.participantsNextPage) {
+      els.participantsNextPage.disabled = state.participantsLoading || !pageMeta.hasNext;
+    }
+    if (els.participantsPageSize) {
+      const expectedValue = String(pageSize);
+      if (els.participantsPageSize.value !== expectedValue) {
+        els.participantsPageSize.value = expectedValue;
+      }
+      els.participantsPageSize.disabled = state.participantsLoading;
+    }
+  }
+
   function renderParticipantsTable() {
+    if (state.participantsLoading) {
+      disconnectParticipantAvatarObserver();
+      els.participantsTableBody.innerHTML = `
+        <tr>
+          <td colspan="7">
+            <p class="message">Loading participants...</p>
+          </td>
+        </tr>
+      `;
+      renderParticipantsPagination();
+      return;
+    }
+
     const filtered = getFilteredParticipants();
     if (!filtered.length) {
+      disconnectParticipantAvatarObserver();
       els.participantsTableBody.innerHTML = `
         <tr>
           <td colspan="7">
             <p class="message">No participants found for this filter.</p>
           </td>
-        </tr>
-      `;
+          </tr>
+        `;
+      renderParticipantsPagination();
       return;
     }
 
@@ -866,7 +1530,7 @@
           ? `<a class="btn btn-light" href="${escapeHtml(participant.resume.dataUrl)}" download="${escapeHtml(participant.resume.fileName || 'resume')}">Resume</a>`
           : '';
         const avatar = participant.profilePicture && participant.profilePicture.dataUrl
-          ? `<img class="participant-avatar" src="${escapeHtml(participant.profilePicture.dataUrl)}" alt="${escapeHtml(participant.fullName || 'Participant')} profile picture">`
+          ? `<img class="participant-avatar participant-avatar-lazy" src="${LAZY_IMAGE_PLACEHOLDER}" data-src="${escapeHtml(participant.profilePicture.dataUrl)}" alt="${escapeHtml(participant.fullName || 'Participant')} profile picture" loading="lazy" decoding="async">`
           : `<span class="participant-avatar participant-avatar-fallback">${escapeHtml(initialsFromName(participant.fullName))}</span>`;
         const safeName = escapeHtml(participant.fullName || '');
         const skillMarkup = renderParticipantPills(participant.id, 'skills', skillList, 'pill pill-skill');
@@ -907,14 +1571,14 @@
         `;
       })
       .join('');
+    hydrateLazyParticipantAvatars();
+    renderParticipantsPagination();
   }
 
   function renderSectionsTable() {
     const counts = new Map();
-    state.participants.forEach((participant) => {
-      (participant.sections || []).forEach((sectionId) => {
-        counts.set(sectionId, (counts.get(sectionId) || 0) + 1);
-      });
+    Object.entries(state.sectionParticipantCounts || {}).forEach(([sectionId, count]) => {
+      counts.set(sectionId, Number.parseInt(String(count || 0), 10) || 0);
     });
 
     if (!state.sections.length) {
@@ -1030,7 +1694,7 @@
     if (state.profilePictureDraft && state.profilePictureDraft.dataUrl) {
       els.profilePictureMeta.innerHTML = `
         <span>Selected profile picture:</span>
-        <img class="profile-meta-preview" src="${escapeHtml(state.profilePictureDraft.dataUrl)}" alt="Selected profile picture preview">
+        <img class="profile-meta-preview" src="${escapeHtml(state.profilePictureDraft.dataUrl)}" alt="Selected profile picture preview" loading="lazy" decoding="async">
         <button type="button" id="removeProfilePictureBtn" class="btn btn-light">Remove</button>
       `;
       return;
@@ -1041,7 +1705,7 @@
       const fileName = profilePicture.fileName || 'profile-picture';
       els.profilePictureMeta.innerHTML = `
         <span>Existing profile picture:</span>
-        <img class="profile-meta-preview" src="${escapeHtml(profilePicture.dataUrl)}" alt="Existing profile picture preview">
+        <img class="profile-meta-preview" src="${escapeHtml(profilePicture.dataUrl)}" alt="Existing profile picture preview" loading="lazy" decoding="async">
         <strong>${escapeHtml(fileName)}</strong>
         <button type="button" id="removeProfilePictureBtn" class="btn btn-light">Remove</button>
       `;
@@ -1113,12 +1777,11 @@
 
   function showParticipantModal() {
     els.participantModal.hidden = false;
-    document.body.classList.add('admin-modal-open');
+    syncModalBodyLock();
   }
 
   function hideParticipantModal() {
     els.participantModal.hidden = true;
-    document.body.classList.remove('admin-modal-open');
     state.editingParticipantId = '';
     state.profilePictureDraft = null;
     state.resumeDraft = null;
@@ -1129,10 +1792,13 @@
     renderProfilePictureMeta(null);
     renderResumeMeta(null);
     lockParticipantFormForViewMode(false);
+    syncModalBodyLock();
   }
 
   function getParticipantById(participantId) {
-    return state.participants.find((entry) => entry.id === participantId) || null;
+    return state.participants.find((entry) => entry.id === participantId)
+      || state.clientPoolParticipants.find((entry) => entry.id === participantId)
+      || null;
   }
 
   function openParticipantModal(mode, participant) {
@@ -1217,42 +1883,94 @@
     });
   }
 
-  async function loadDashboardData() {
-    const [dashboardRes, sectionsRes, participantsRes] = await Promise.all([
-      api('/api/admin/dashboard'),
-      api('/api/admin/sections'),
-      api('/api/admin/participants'),
-    ]);
+  async function loadDashboardData(options = {}) {
+    const includeAccounts = options.includeAccounts !== false;
+    const includeClientWorkspace = options.includeClientWorkspace !== false;
+    const includeParticipants = options.includeParticipants !== false;
 
-    state.sections = sectionsRes.sections || [];
-    state.participants = participantsRes.participants || [];
-    state.clientRequests = [];
-    state.hiredProfiles = [];
+    const dashboardRes = await api('/api/admin/dashboard');
+
+    if (Array.isArray(dashboardRes.sections)) {
+      state.sections = dashboardRes.sections;
+    } else {
+      const sectionsRes = await api('/api/admin/sections');
+      state.sections = sectionsRes.sections || [];
+    }
+    if (includeParticipants) {
+      await loadParticipantsPage();
+    }
+    const dashboardSectionCounts = dashboardRes && typeof dashboardRes.sectionCounts === 'object'
+      ? dashboardRes.sectionCounts
+      : null;
+    const dashboardRecentParticipants = Array.isArray(dashboardRes?.recentParticipants)
+      ? dashboardRes.recentParticipants
+      : null;
+    const hasDashboardSectionCounts = Boolean(
+      dashboardSectionCounts && Object.keys(dashboardSectionCounts).length > 0,
+    );
+    const hasDashboardRecentParticipants = Boolean(
+      dashboardRecentParticipants && dashboardRecentParticipants.length > 0,
+    );
+    const needsParticipantFallback = !hasDashboardSectionCounts || !hasDashboardRecentParticipants;
+    if (!includeParticipants && needsParticipantFallback) {
+      await loadParticipantsPage();
+    }
+
+    const fallbackOverview = (includeParticipants || needsParticipantFallback)
+      ? deriveOverviewDataFromParticipants(state.participants)
+      : { sectionCounts: state.sectionParticipantCounts || {}, recentParticipants: state.recentParticipants || [] };
+
+    if (hasDashboardSectionCounts) {
+      state.sectionParticipantCounts = dashboardSectionCounts;
+    } else if (includeParticipants) {
+      state.sectionParticipantCounts = fallbackOverview.sectionCounts;
+    } else {
+      state.sectionParticipantCounts = state.sectionParticipantCounts || {};
+    }
+
+    if (hasDashboardRecentParticipants) {
+      state.recentParticipants = dashboardRecentParticipants;
+    } else if (includeParticipants) {
+      state.recentParticipants = fallbackOverview.recentParticipants;
+    } else {
+      state.recentParticipants = Array.isArray(state.recentParticipants)
+        ? state.recentParticipants
+        : [];
+    }
     state.counts = dashboardRes.counts || {
       participants: state.participants.length,
       sections: state.sections.length,
       subAccounts: state.accounts.length,
     };
 
-    if (isAdmin()) {
+    if (isAdmin() && includeAccounts) {
       const accountsRes = await api('/api/admin/accounts');
       state.accounts = accountsRes.accounts || [];
       state.counts.subAccounts = state.accounts.length;
     } else {
-      state.accounts = [];
+      if (!isAdmin()) {
+        state.accounts = [];
+      }
     }
 
-    try {
-      const clientRequestsRes = await api('/api/admin/client-requests');
-      state.clientRequests = clientRequestsRes.requests || [];
-      state.hiredProfiles = clientRequestsRes.hiredProfiles || [];
-    } catch (error) {
-      state.clientRequests = [];
-      state.hiredProfiles = [];
-      console.warn('Client request workspace unavailable:', error.message || error);
+    if (includeClientWorkspace) {
+      await loadClientPoolPage();
+
+      try {
+        const clientRequestsRes = await api('/api/admin/client-requests');
+        state.clientRequests = clientRequestsRes.requests || [];
+        state.hiredProfiles = clientRequestsRes.hiredProfiles || [];
+      } catch (error) {
+        state.clientRequests = [];
+        state.hiredProfiles = [];
+        console.warn('Client request workspace unavailable:', error.message || error);
+      }
     }
 
-    const validParticipantIds = new Set(state.participants.map((participant) => participant.id));
+    const validParticipantIds = new Set([
+      ...state.participants.map((participant) => participant.id),
+      ...state.clientPoolParticipants.map((participant) => participant.id),
+    ]);
     state.selectedClientParticipantIds = new Set(
       Array.from(state.selectedClientParticipantIds).filter((participantId) => validParticipantIds.has(participantId)),
     );
@@ -1266,11 +1984,21 @@
     renderSectionFilterOptions();
     renderClientSectionFilterOptions();
     renderStats();
-    renderOverview();
-    renderParticipantsTable();
-    renderSectionsTable();
-    renderAccountsTable();
-    renderClientWorkspace();
+    if (state.activeView === 'overview') {
+      renderOverview();
+    }
+    if (state.activeView === 'participants') {
+      renderParticipantsTable();
+    }
+    if (state.activeView === 'sections') {
+      renderSectionsTable();
+    }
+    if (state.activeView === 'accounts') {
+      renderAccountsTable();
+    }
+    if (state.activeView === 'client-requests') {
+      renderClientWorkspace();
+    }
   }
 
   function renderView() {
@@ -1325,15 +2053,70 @@
     }
   }
 
-  async function refreshAndRender() {
-    await loadDashboardData();
+  function getLoadOptionsForView(viewId) {
+    const view = String(viewId || '').trim().toLowerCase();
+    return {
+      includeParticipants: view === 'participants',
+      includeAccounts: view === 'accounts',
+      includeClientWorkspace: view === 'client-requests',
+    };
+  }
+
+  async function runRefreshAndRender() {
+    await loadDashboardData(getLoadOptionsForView(state.activeView));
     renderUser();
     applyRoleAccess();
     renderView();
+    state.lastRefreshAt = Date.now();
+  }
+
+  function refreshAndRender() {
+    if (state.refreshPromise) {
+      return state.refreshPromise;
+    }
+
+    state.refreshPromise = runRefreshAndRender()
+      .finally(() => {
+        state.refreshPromise = null;
+      });
+
+    return state.refreshPromise;
+  }
+
+  async function refreshForView(viewId) {
+    const options = getLoadOptionsForView(viewId);
+
+    try {
+      await loadDashboardData(options);
+      state.lastRefreshAt = Date.now();
+    } catch (error) {
+      notifyAction(error.message || 'Failed to refresh data for this view.', true, {
+        title: 'Refresh failed',
+        autoClose: false,
+      });
+    }
+  }
+
+  function refreshAfterAction() {
+    void refreshAndRender().catch((error) => {
+      console.warn('Post-action refresh failed:', error?.message || error);
+      setGlobalMessage('Saved, but live refresh failed. Reload the page to sync all data.', true);
+    });
   }
 
   async function handleLogin(event) {
     event.preventDefault();
+    if (state.loginRequestInFlight) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now < state.nextLoginAttemptAt) {
+      const waitSeconds = Math.max(1, Math.ceil((state.nextLoginAttemptAt - now) / 1000));
+      setMessage(els.loginMessage, `Please wait ${waitSeconds}s before trying again.`, true);
+      return;
+    }
+
     setMessage(els.loginMessage, '', false);
 
     const username = String(els.loginUsername.value || '').trim();
@@ -1342,6 +2125,9 @@
       setMessage(els.loginMessage, 'Username and password are required.', true);
       return;
     }
+
+    state.loginRequestInFlight = true;
+    setLoginPending(true);
 
     try {
       const response = await api('/api/admin/login', {
@@ -1352,16 +2138,23 @@
 
       setAuthToken(response.token);
       state.user = response.user;
+      state.nextLoginAttemptAt = 0;
       els.loginPassword.value = '';
       showApp();
       await refreshAndRender();
-      setGlobalMessage('Signed in successfully.', false);
+      notifyAction('Signed in successfully.', false, { title: 'Welcome back' });
     } catch (error) {
+      if (error.status === 401) {
+        state.nextLoginAttemptAt = Date.now() + LOGIN_RETRY_COOLDOWN_MS;
+      }
       if (els.appShell.hidden) {
         setMessage(els.loginMessage, error.message || 'Login failed.', true);
       } else {
-        setGlobalMessage(error.message || 'Failed to load dashboard data.', true);
+        notifyAction(error.message || 'Failed to load dashboard data.', true, { title: 'Sign-in error', autoClose: false });
       }
+    } finally {
+      state.loginRequestInFlight = false;
+      setLoginPending(false);
     }
   }
 
@@ -1401,30 +2194,36 @@
             ...payload,
           },
         });
-        setGlobalMessage('Participant updated.', false);
+        notifyAction('Participant updated.', false, { title: 'Saved' });
       } else {
         await api('/api/admin/participants', {
           method: 'POST',
           body: payload,
         });
-        setGlobalMessage('Participant created.', false);
+        notifyAction('Participant created.', false, { title: 'Saved' });
       }
 
       hideParticipantModal();
-      await refreshAndRender();
+      refreshAfterAction();
     } catch (error) {
       const rawMessage = String(error.message || 'Failed to save participant.');
       if (/profile_picture/i.test(rawMessage)) {
-        setGlobalMessage('Profile picture column is missing in database. Run docs/SUPABASE_SETUP.sql, then try again.', true);
+        notifyAction('Profile picture column is missing in database. Run docs/SUPABASE_SETUP.sql, then try again.', true, { title: 'Save failed', autoClose: false });
       } else {
-        setGlobalMessage(rawMessage, true);
+        notifyAction(rawMessage, true, { title: 'Save failed', autoClose: false });
       }
     }
   }
 
   async function removeParticipant(participantId) {
     if (!participantId || !isAdmin()) return;
-    const confirmed = window.confirm('Delete this participant?');
+    const confirmed = await showSystemConfirmDialog({
+      title: 'Delete participant',
+      subtitle: 'This action cannot be undone',
+      message: 'Delete this participant profile?',
+      confirmText: 'Delete',
+      danger: true,
+    });
     if (!confirmed) return;
 
     try {
@@ -1433,10 +2232,10 @@
         body: { id: participantId },
       });
       hideParticipantModal();
-      await refreshAndRender();
-      setGlobalMessage('Participant deleted.', false);
+      refreshAfterAction();
+      notifyAction('Participant deleted.', false, { title: 'Deleted' });
     } catch (error) {
-      setGlobalMessage(error.message || 'Failed to delete participant.', true);
+      notifyAction(error.message || 'Failed to delete participant.', true, { title: 'Delete failed', autoClose: false });
     }
   }
 
@@ -1451,10 +2250,10 @@
           status,
         },
       });
-      await refreshAndRender();
-      setGlobalMessage(`Participant moved to ${statusLabel(status)}.`, false);
+      refreshAfterAction();
+      notifyAction(`Participant moved to ${statusLabel(status)}.`, false, { title: 'Updated' });
     } catch (error) {
-      setGlobalMessage(error.message || 'Failed to update participant status.', true);
+      notifyAction(error.message || 'Failed to update participant status.', true, { title: 'Update failed', autoClose: false });
     }
   }
 
@@ -1475,10 +2274,10 @@
         body: { name, description },
       });
       els.sectionForm.reset();
-      await refreshAndRender();
-      setGlobalMessage('Section added.', false);
+      refreshAfterAction();
+      notifyAction('Section added.', false, { title: 'Saved' });
     } catch (error) {
-      setGlobalMessage(error.message || 'Failed to add section.', true);
+      notifyAction(error.message || 'Failed to add section.', true, { title: 'Save failed', autoClose: false });
     }
   }
 
@@ -1501,10 +2300,10 @@
         body: { username, displayName, password },
       });
       els.accountForm.reset();
-      await refreshAndRender();
-      setGlobalMessage('Sub-account created.', false);
+      refreshAfterAction();
+      notifyAction('Sub-account created.', false, { title: 'Saved' });
     } catch (error) {
-      setGlobalMessage(error.message || 'Failed to create sub-account.', true);
+      notifyAction(error.message || 'Failed to create sub-account.', true, { title: 'Save failed', autoClose: false });
     }
   }
 
@@ -1570,7 +2369,13 @@
     if (!sectionId) return;
 
     if (action === 'delete-section') {
-      const confirmed = window.confirm('Delete this section? Participants will be unlinked.');
+      const confirmed = await showSystemConfirmDialog({
+        title: 'Delete section',
+        subtitle: 'This action cannot be undone',
+        message: 'Delete this section? Linked participants will be unassigned.',
+        confirmText: 'Delete',
+        danger: true,
+      });
       if (!confirmed) return;
 
       try {
@@ -1578,10 +2383,10 @@
           method: 'DELETE',
           body: { id: sectionId },
         });
-        await refreshAndRender();
-        setGlobalMessage('Section deleted.', false);
+        refreshAfterAction();
+        notifyAction('Section deleted.', false, { title: 'Deleted' });
       } catch (error) {
-        setGlobalMessage(error.message || 'Failed to delete section.', true);
+        notifyAction(error.message || 'Failed to delete section.', true, { title: 'Delete failed', autoClose: false });
       }
       return;
     }
@@ -1590,19 +2395,42 @@
       const section = state.sections.find((entry) => entry.id === sectionId);
       if (!section) return;
 
-      const name = window.prompt('Section name:', section.name || '');
-      if (!name) return;
-
-      const description = window.prompt('Section description:', section.description || '') || '';
+      const values = await showSystemPromptDialog({
+        title: 'Update section',
+        subtitle: 'Edit section details',
+        message: 'Update the section name and description.',
+        confirmText: 'Save',
+        primary: {
+          label: 'Section name',
+          value: section.name || '',
+          required: true,
+          maxLength: 120,
+          placeholder: 'Section name',
+        },
+        secondary: {
+          label: 'Section description',
+          value: section.description || '',
+          required: false,
+          maxLength: 240,
+          placeholder: 'Description (optional)',
+        },
+      });
+      if (!values) return;
+      const name = String(values.primary || '').trim();
+      if (!name) {
+        notifyAction('Section name is required.', true, { title: 'Update failed', autoClose: false });
+        return;
+      }
+      const description = String(values.secondary || '').trim();
       try {
         await api('/api/admin/sections', {
           method: 'PUT',
           body: { id: sectionId, name, description },
         });
-        await refreshAndRender();
-        setGlobalMessage('Section updated.', false);
+        refreshAfterAction();
+        notifyAction('Section updated.', false, { title: 'Updated' });
       } catch (error) {
-        setGlobalMessage(error.message || 'Failed to update section.', true);
+        notifyAction(error.message || 'Failed to update section.', true, { title: 'Update failed', autoClose: false });
       }
     }
   }
@@ -1622,31 +2450,52 @@
           method: 'PUT',
           body: { id: accountId, isActive: !account.isActive },
         });
-        await refreshAndRender();
-        setGlobalMessage('Account status updated.', false);
+        refreshAfterAction();
+        notifyAction('Account status updated.', false, { title: 'Updated' });
       } catch (error) {
-        setGlobalMessage(error.message || 'Failed to update account.', true);
+        notifyAction(error.message || 'Failed to update account.', true, { title: 'Update failed', autoClose: false });
       }
       return;
     }
 
     if (action === 'reset-account-password') {
-      const password = window.prompt(`Set new password for ${account.username}:`, '');
+      const values = await showSystemPromptDialog({
+        title: 'Reset password',
+        subtitle: account.username,
+        message: `Set new password for ${account.username}.`,
+        confirmText: 'Update',
+        primary: {
+          label: 'New password',
+          value: '',
+          type: 'password',
+          required: true,
+          maxLength: 120,
+          placeholder: 'Minimum 8 characters',
+        },
+      });
+      if (!values) return;
+      const password = String(values.primary || '');
       if (!password) return;
       try {
         await api('/api/admin/accounts', {
           method: 'PUT',
           body: { id: accountId, password },
         });
-        setGlobalMessage('Password updated.', false);
+        notifyAction('Password updated.', false, { title: 'Updated' });
       } catch (error) {
-        setGlobalMessage(error.message || 'Failed to reset password.', true);
+        notifyAction(error.message || 'Failed to reset password.', true, { title: 'Update failed', autoClose: false });
       }
       return;
     }
 
     if (action === 'delete-account') {
-      const confirmed = window.confirm(`Delete sub-account "${account.username}"?`);
+      const confirmed = await showSystemConfirmDialog({
+        title: 'Delete sub-account',
+        subtitle: 'This action cannot be undone',
+        message: `Delete sub-account "${account.username}"?`,
+        confirmText: 'Delete',
+        danger: true,
+      });
       if (!confirmed) return;
 
       try {
@@ -1654,10 +2503,10 @@
           method: 'DELETE',
           body: { id: accountId },
         });
-        await refreshAndRender();
-        setGlobalMessage('Sub-account deleted.', false);
+        refreshAfterAction();
+        notifyAction('Sub-account deleted.', false, { title: 'Deleted' });
       } catch (error) {
-        setGlobalMessage(error.message || 'Failed to delete account.', true);
+        notifyAction(error.message || 'Failed to delete account.', true, { title: 'Delete failed', autoClose: false });
       }
     }
   }
@@ -1748,13 +2597,36 @@
     state.activeView = nextView;
     renderView();
     closeMobileNav();
+
+    if (nextView === 'overview') {
+      renderOverview();
+    } else if (nextView === 'participants') {
+      renderParticipantsTable();
+    } else if (nextView === 'sections') {
+      renderSectionsTable();
+    } else if (nextView === 'accounts') {
+      renderAccountsTable();
+    } else if (nextView === 'client-requests') {
+      renderClientWorkspace();
+    }
+
+    if (nextView === 'accounts' || nextView === 'client-requests' || nextView === 'participants') {
+      void refreshForView(nextView);
+    }
   }
 
-  function applyParticipantFiltersFromInputs() {
+  async function applyParticipantFiltersFromInputs() {
     state.participantFilters.search = String(els.participantsSearch.value || '').trim();
     state.participantFilters.section = String(els.participantsSectionFilter.value || '').trim();
     state.participantFilters.status = String(els.participantsStatusFilter.value || '').trim();
-    renderParticipantsTable();
+    state.participantFilters.page = 1;
+    try {
+      await loadParticipantsPage();
+      renderParticipantsTable();
+    } catch (error) {
+      notifyAction(error.message || 'Failed to load participants.', true, { title: 'Load failed', autoClose: false });
+      renderParticipantsTable();
+    }
   }
 
   function handleSearchInput() {
@@ -1762,15 +2634,55 @@
       clearTimeout(state.searchDebounceHandle);
     }
     state.searchDebounceHandle = window.setTimeout(() => {
-      applyParticipantFiltersFromInputs();
+      void applyParticipantFiltersFromInputs();
     }, FILTER_DEBOUNCE_MS);
   }
 
-  function applyClientPoolFiltersFromInputs() {
+  async function goToParticipantsPage(page) {
+    const nextPage = Number.parseInt(String(page || 1), 10);
+    if (!Number.isInteger(nextPage) || nextPage < 1) return;
+    if (state.participantsLoading) return;
+
+    state.participantFilters.page = nextPage;
+    try {
+      await loadParticipantsPage();
+      renderParticipantsTable();
+    } catch (error) {
+      notifyAction(error.message || 'Failed to load participants.', true, { title: 'Load failed', autoClose: false });
+      renderParticipantsTable();
+    }
+  }
+
+  function handleParticipantsPrevPage() {
+    if (!state.participantPagination.hasPrev) return;
+    void goToParticipantsPage(state.participantPagination.page - 1);
+  }
+
+  function handleParticipantsNextPage() {
+    if (!state.participantPagination.hasNext) return;
+    void goToParticipantsPage(state.participantPagination.page + 1);
+  }
+
+  function handleParticipantsPageSizeChange() {
+    const pageSize = Number.parseInt(String(els.participantsPageSize?.value || ''), 10);
+    if (!Number.isInteger(pageSize) || pageSize < 5) return;
+    state.participantFilters.pageSize = pageSize;
+    state.participantFilters.page = 1;
+    void goToParticipantsPage(1);
+  }
+
+  async function applyClientPoolFiltersFromInputs() {
     state.clientPoolFilters.search = String(els.clientPoolSearch?.value || '').trim();
     state.clientPoolFilters.section = String(els.clientPoolSectionFilter?.value || '').trim();
     state.clientPoolFilters.status = String(els.clientPoolStatusFilter?.value || '').trim();
-    renderClientPoolTable();
+    state.clientPoolFilters.page = 1;
+    try {
+      await loadClientPoolPage();
+      renderClientPoolTable();
+    } catch (error) {
+      notifyAction(error.message || 'Failed to load candidate profiles.', true, { title: 'Load failed', autoClose: false });
+      renderClientPoolTable();
+    }
   }
 
   function handleClientPoolSearchInput() {
@@ -1778,8 +2690,41 @@
       clearTimeout(state.clientSearchDebounceHandle);
     }
     state.clientSearchDebounceHandle = window.setTimeout(() => {
-      applyClientPoolFiltersFromInputs();
+      void applyClientPoolFiltersFromInputs();
     }, FILTER_DEBOUNCE_MS);
+  }
+
+  async function goToClientPoolPage(page) {
+    const nextPage = Number.parseInt(String(page || 1), 10);
+    if (!Number.isInteger(nextPage) || nextPage < 1) return;
+    if (state.clientPoolLoading) return;
+
+    state.clientPoolFilters.page = nextPage;
+    try {
+      await loadClientPoolPage();
+      renderClientPoolTable();
+    } catch (error) {
+      notifyAction(error.message || 'Failed to load candidate profiles.', true, { title: 'Load failed', autoClose: false });
+      renderClientPoolTable();
+    }
+  }
+
+  function handleClientPoolPrevPage() {
+    if (!state.clientPoolPagination.hasPrev) return;
+    void goToClientPoolPage(state.clientPoolPagination.page - 1);
+  }
+
+  function handleClientPoolNextPage() {
+    if (!state.clientPoolPagination.hasNext) return;
+    void goToClientPoolPage(state.clientPoolPagination.page + 1);
+  }
+
+  function handleClientPoolPageSizeChange() {
+    const pageSize = Number.parseInt(String(els.clientPoolPageSize?.value || ''), 10);
+    if (!Number.isInteger(pageSize) || pageSize < 5) return;
+    state.clientPoolFilters.pageSize = pageSize;
+    state.clientPoolFilters.page = 1;
+    void goToClientPoolPage(1);
   }
 
   function handleClientPoolTableChange(event) {
@@ -1883,10 +2828,10 @@
         els.clientCeoIncluded.checked = true;
       }
 
-      await refreshAndRender();
-      setGlobalMessage('Client request submitted. Management has been notified.', false);
+      refreshAfterAction();
+      notifyAction('Client request submitted. Management has been notified.', false, { title: 'Saved' });
     } catch (error) {
-      setGlobalMessage(error.message || 'Failed to submit client request.', true);
+      notifyAction(error.message || 'Failed to submit client request.', true, { title: 'Save failed', autoClose: false });
     }
   }
 
@@ -1926,8 +2871,8 @@
     try {
       if (action === 'finalize-all') {
         await finalizeClientRequestSelection(requestId, 'all');
-        await refreshAndRender();
-        setGlobalMessage('Hiring finalized for all selected profiles. Notification sent.', false);
+        refreshAfterAction();
+        notifyAction('Hiring finalized for all selected profiles. Notification sent.', false, { title: 'Updated' });
         return;
       }
 
@@ -1939,8 +2884,8 @@
         }
 
         await finalizeClientRequestSelection(requestId, 'manual', selectedIds);
-        await refreshAndRender();
-        setGlobalMessage('Manual hiring finalization saved. Notification sent.', false);
+        refreshAfterAction();
+        notifyAction('Manual hiring finalization saved. Notification sent.', false, { title: 'Updated' });
         return;
       }
 
@@ -1949,11 +2894,11 @@
         if (!status || !isAdmin()) return;
 
         await setClientRequestStatus(requestId, status);
-        await refreshAndRender();
-        setGlobalMessage(`Request status updated to ${requestStatusLabel(status)}.`, false);
+        refreshAfterAction();
+        notifyAction(`Request status updated to ${requestStatusLabel(status)}.`, false, { title: 'Updated' });
       }
     } catch (error) {
-      setGlobalMessage(error.message || 'Failed to update client request.', true);
+      notifyAction(error.message || 'Failed to update client request.', true, { title: 'Update failed', autoClose: false });
     }
   }
 
@@ -1985,17 +2930,43 @@
     });
 
     els.participantsSearch.addEventListener('input', handleSearchInput);
-    els.participantsSectionFilter.addEventListener('change', applyParticipantFiltersFromInputs);
-    els.participantsStatusFilter.addEventListener('change', applyParticipantFiltersFromInputs);
+    els.participantsSectionFilter.addEventListener('change', () => {
+      void applyParticipantFiltersFromInputs();
+    });
+    els.participantsStatusFilter.addEventListener('change', () => {
+      void applyParticipantFiltersFromInputs();
+    });
+    if (els.participantsPrevPage) {
+      els.participantsPrevPage.addEventListener('click', handleParticipantsPrevPage);
+    }
+    if (els.participantsNextPage) {
+      els.participantsNextPage.addEventListener('click', handleParticipantsNextPage);
+    }
+    if (els.participantsPageSize) {
+      els.participantsPageSize.addEventListener('change', handleParticipantsPageSizeChange);
+    }
 
     if (els.clientPoolSearch) {
       els.clientPoolSearch.addEventListener('input', handleClientPoolSearchInput);
     }
     if (els.clientPoolSectionFilter) {
-      els.clientPoolSectionFilter.addEventListener('change', applyClientPoolFiltersFromInputs);
+      els.clientPoolSectionFilter.addEventListener('change', () => {
+        void applyClientPoolFiltersFromInputs();
+      });
     }
     if (els.clientPoolStatusFilter) {
-      els.clientPoolStatusFilter.addEventListener('change', applyClientPoolFiltersFromInputs);
+      els.clientPoolStatusFilter.addEventListener('change', () => {
+        void applyClientPoolFiltersFromInputs();
+      });
+    }
+    if (els.clientPoolPrevPage) {
+      els.clientPoolPrevPage.addEventListener('click', handleClientPoolPrevPage);
+    }
+    if (els.clientPoolNextPage) {
+      els.clientPoolNextPage.addEventListener('click', handleClientPoolNextPage);
+    }
+    if (els.clientPoolPageSize) {
+      els.clientPoolPageSize.addEventListener('change', handleClientPoolPageSizeChange);
     }
     if (els.selectVisibleCandidatesBtn) {
       els.selectVisibleCandidatesBtn.addEventListener('click', handleSelectVisibleCandidates);
@@ -2037,6 +3008,24 @@
     els.profilePictureMeta.addEventListener('click', handleProfilePictureMetaClick);
     els.resumeFile.addEventListener('change', handleResumeFileChange);
     els.resumeMeta.addEventListener('click', handleResumeMetaClick);
+    if (els.systemNoticeClose) {
+      els.systemNoticeClose.addEventListener('click', hideSystemNotice);
+    }
+    if (els.systemNoticeBackdrop) {
+      els.systemNoticeBackdrop.addEventListener('click', hideSystemNotice);
+    }
+    if (els.systemActionClose) {
+      els.systemActionClose.addEventListener('click', handleActionDialogCancel);
+    }
+    if (els.systemActionCancel) {
+      els.systemActionCancel.addEventListener('click', handleActionDialogCancel);
+    }
+    if (els.systemActionBackdrop) {
+      els.systemActionBackdrop.addEventListener('click', handleActionDialogCancel);
+    }
+    if (els.systemActionForm) {
+      els.systemActionForm.addEventListener('submit', handleActionDialogSubmit);
+    }
     if (typeof MOBILE_NAV_QUERY.addEventListener === 'function') {
       MOBILE_NAV_QUERY.addEventListener('change', syncMobileNavForViewport);
     } else if (typeof MOBILE_NAV_QUERY.addListener === 'function') {
@@ -2047,6 +3036,14 @@
     } else if (typeof SYSTEM_THEME_QUERY.addListener === 'function') {
       SYSTEM_THEME_QUERY.addListener(handleSystemThemeChange);
     }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        void refreshInBackground();
+      }
+    });
+    window.addEventListener('focus', () => {
+      void refreshInBackground();
+    });
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') {
         return;
@@ -2054,6 +3051,16 @@
 
       if (!els.participantModal.hidden) {
         hideParticipantModal();
+        return;
+      }
+
+      if (els.systemNoticeModal && !els.systemNoticeModal.hidden) {
+        hideSystemNotice();
+        return;
+      }
+
+      if (els.systemActionModal && !els.systemActionModal.hidden) {
+        hideActionDialog(null);
         return;
       }
 
@@ -2065,6 +3072,18 @@
 
   function initialize() {
     initializeTheme();
+    if (els.participantsPageSize) {
+      const initialPageSize = Number.parseInt(String(els.participantsPageSize.value || ''), 10);
+      if (Number.isInteger(initialPageSize) && initialPageSize >= 5) {
+        state.participantFilters.pageSize = initialPageSize;
+      }
+    }
+    if (els.clientPoolPageSize) {
+      const initialPoolPageSize = Number.parseInt(String(els.clientPoolPageSize.value || ''), 10);
+      if (Number.isInteger(initialPoolPageSize) && initialPoolPageSize >= 5) {
+        state.clientPoolFilters.pageSize = initialPoolPageSize;
+      }
+    }
     bindEvents();
     syncMobileNavForViewport();
     bootstrapSession();

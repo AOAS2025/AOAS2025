@@ -1,4 +1,5 @@
 const express = require('express');
+require('dotenv').config();
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -38,7 +39,6 @@ const {
   updateClientRequestStatus,
   finalizeClientRequest,
 } = require('./lib/admin-crm');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -76,7 +76,21 @@ app.use((err, req, res, next) => {
 
 // Serve static files (only for local development, Vercel handles this)
 if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
-  app.use(express.static('.'));
+  app.use(express.static('.', {
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      const extension = path.extname(filePath).toLowerCase();
+      if (extension === '.html') {
+        res.setHeader('Cache-Control', 'no-cache');
+        return;
+      }
+
+      if (/\.(js|css|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|eot|map)$/.test(extension)) {
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+      }
+    },
+  }));
 
   // Local clean URL support (e.g., /services, /privacy, /services/payroll)
   app.get('*', (req, res, next) => {
@@ -135,6 +149,20 @@ function toPublicUser(user) {
 
 function getEntityIdFromRequest(req) {
   return sanitizeText(req.params?.id || req.body?.id || req.query?.id || '', 120);
+}
+
+function parsePaginationValue(value, fallback, min = 1, max = 100) {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  if (parsed < min) {
+    return min;
+  }
+  if (parsed > max) {
+    return max;
+  }
+  return parsed;
 }
 
 function escapeHtml(input) {
@@ -515,14 +543,14 @@ app.post('/api/careers', async (req, res) => {
     };
 
     if (!resend || !RESEND_API_KEY) {
-      console.error('Ã¢ÂÅ’ Resend API key not configured');
+      console.error('Resend API key not configured');
       return res.status(500).json({
         success: false,
         error: 'Email service not configured. Please set RESEND_API_KEY environment variable.'
       });
     }
 
-    console.log(`Ã°Å¸â€œÂ§ Attempting to send career application from ${email} (${fullName})`);
+    console.log(`Attempting to send career application from ${email} (${fullName})`);
 
     // Decode base64 file data
     let attachmentContent = null;
@@ -664,7 +692,7 @@ Received on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })} (
     const { data, error } = await resend.emails.send(emailOptions);
 
     if (error) {
-      console.error('Ã¢ÂÅ’ Resend API error:', JSON.stringify(error, null, 2));
+      console.error('Resend API error:', JSON.stringify(error, null, 2));
       console.error('Error details:', error.message || error);
       return res.status(500).json({
         success: false,
@@ -673,9 +701,9 @@ Received on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })} (
     }
 
     if (data && data.id) {
-      console.log(`Ã¢Å“â€¦ Career application email sent successfully! Email ID: ${data.id}`);
+      console.log(`Career application email sent successfully. Email ID: ${data.id}`);
     } else {
-      console.log('Ã¢Å¡Â Ã¯Â¸Â Email sent but no ID returned from Resend');
+      console.log('Email sent but no ID returned from Resend');
     }
 
     res.json({
@@ -685,7 +713,7 @@ Received on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })} (
     });
 
   } catch (error) {
-    console.error('Ã¢ÂÅ’ Server error:', error);
+    console.error('Server error:', error);
     console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
@@ -858,42 +886,33 @@ app.get('/api/admin/participants', async (req, res) => {
       return;
     }
 
-    const search = sanitizeText(req.query?.search || '', 120).toLowerCase();
-    const sectionFilter = sanitizeText(req.query?.section || '', 80).toLowerCase();
-    const statusFilter = sanitizeText(req.query?.status || '', 40).toLowerCase();
-    let participants = await listParticipants();
+    const search = sanitizeText(req.query?.search || '', 120);
+    const sectionFilter = sanitizeText(req.query?.section || '', 80);
+    const statusFilter = sanitizeText(req.query?.status || '', 40);
+    const statusSet = sanitizeText(req.query?.statusSet || '', 80);
+    const page = parsePaginationValue(req.query?.page, 1, 1, 1000000);
+    const pageSize = parsePaginationValue(req.query?.pageSize, 20, 5, 100);
 
-    if (sectionFilter) {
-      participants = participants.filter((participant) => Array.isArray(participant.sections) && participant.sections.includes(sectionFilter));
-    }
-
-    if (statusFilter) {
-      participants = participants.filter((participant) => (participant.status || '').toLowerCase() === statusFilter);
-    }
-
-    if (search) {
-      participants = participants.filter((participant) => {
-        const haystack = [
-          participant.fullName,
-          participant.email,
-          participant.contactNumber,
-          participant.address,
-          participant.gender,
-          participant.notes,
-          ...(Array.isArray(participant.skills) ? participant.skills : []),
-          ...(Array.isArray(participant.sections) ? participant.sections : []),
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-
-        return haystack.includes(search);
-      });
-    }
+    const payload = await listParticipants({
+      search,
+      section: sectionFilter,
+      status: statusFilter,
+      statusSet,
+      page,
+      pageSize,
+    });
 
     res.json({
       success: true,
-      participants,
+      participants: payload.participants || [],
+      pagination: payload.pagination || {
+        page,
+        pageSize,
+        total: 0,
+        totalPages: 1,
+        hasPrev: false,
+        hasNext: false,
+      },
     });
   } catch (error) {
     sendAdminError(res, error);
@@ -1207,11 +1226,13 @@ app.post('/api/admin/client-requests/:id/finalize', async (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  require('dotenv').config({ override: true });
+  const runtimeResendKey = (process.env.RESEND_API_KEY || '').trim();
   res.json({
     status: 'ok',
     message: 'Server is running',
-    resendConfigured: !!RESEND_API_KEY,
-    apiKeyLength: RESEND_API_KEY ? RESEND_API_KEY.length : 0
+    resendConfigured: !!runtimeResendKey,
+    apiKeyLength: runtimeResendKey ? runtimeResendKey.length : 0
   });
 });
 
@@ -1222,9 +1243,9 @@ module.exports = app;
 // Only listen if not on Vercel (for local development)
 if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
   app.listen(PORT, () => {
-    console.log(`\nÃ°Å¸Å¡â‚¬ Server is running on http://localhost:${PORT}`);
-    console.log(`Ã¢Å“â€¦ Resend API Key is configured`);
-    console.log(`Ã°Å¸â€œÂ§ Contact form endpoint: http://localhost:${PORT}/api/contact`);
+    console.log(`\nServer is running on http://localhost:${PORT}`);
+    console.log('Resend API key is configured');
+    console.log(`Contact form endpoint: http://localhost:${PORT}/api/contact`);
     console.log(`\nReady to receive contact form submissions!\n`);
   });
 }

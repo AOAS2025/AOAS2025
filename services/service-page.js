@@ -43,33 +43,160 @@
         }
     }
 
-    function ensureHcaptchaScript() {
-        if (window.hcaptcha) {
-            return Promise.resolve();
-        }
-
-        if (window.__aoasHcaptchaPromise) {
-            return window.__aoasHcaptchaPromise;
-        }
-
-        window.__aoasHcaptchaPromise = new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
-            script.async = true;
-            script.defer = true;
-            script.dataset.aoasHcaptcha = 'true';
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error('Failed to load hCaptcha script'));
-            document.head.appendChild(script);
-        });
-
-        return window.__aoasHcaptchaPromise;
-    }
-
     function setStatus(target, message, tone = 'neutral') {
         if (!target) return;
         target.textContent = message;
         target.className = `service-form-status ${tone}`;
+    }
+
+    function setupLocalFormDraft(form, options = {}) {
+        if (!form || typeof window === 'undefined') {
+            return null;
+        }
+
+        const storagePrefix = options.storagePrefix || 'aoas_form_draft_v1';
+        const defaultId = form.id || form.getAttribute('name') || form.getAttribute('data-service') || 'form';
+        const scope = options.scope || window.location.pathname || 'service-page';
+        const storageKey = options.storageKey || `${storagePrefix}:${scope}:${defaultId}`;
+        const includeHidden = Boolean(options.includeHidden);
+        const includeFields = Array.isArray(options.includeFields) ? new Set(options.includeFields) : null;
+        const excludeFields = new Set(options.excludeFields || []);
+        const debounceMs = Number.isFinite(options.debounceMs) ? options.debounceMs : 240;
+
+        const getFields = () => Array.from(form.querySelectorAll('input, select, textarea'));
+        const getFieldKey = (field) => field?.name || field?.id || '';
+
+        const shouldPersistField = (field) => {
+            if (!field || field.disabled) return false;
+            if (field.closest('.honeypot-field')) return false;
+            const key = getFieldKey(field);
+            if (!key) return false;
+            if (includeFields && !includeFields.has(key)) return false;
+            if (excludeFields.has(key)) return false;
+            if (field.type === 'password' || field.type === 'file') return false;
+            if (field.type === 'hidden' && !includeHidden) return false;
+            return true;
+        };
+
+        const collect = () => {
+            const values = {};
+            const handledRadioKeys = new Set();
+
+            getFields().forEach((field) => {
+                if (!shouldPersistField(field)) return;
+                const key = getFieldKey(field);
+
+                if (field.type === 'radio') {
+                    if (handledRadioKeys.has(key)) return;
+                    handledRadioKeys.add(key);
+                    const selected = getFields().find(
+                        (candidate) => candidate.type === 'radio' && getFieldKey(candidate) === key && candidate.checked
+                    );
+                    values[key] = selected ? selected.value : '';
+                    return;
+                }
+
+                if (field.type === 'checkbox') {
+                    values[key] = Boolean(field.checked);
+                    return;
+                }
+
+                values[key] = field.value;
+            });
+
+            return values;
+        };
+
+        const save = () => {
+            try {
+                window.localStorage.setItem(storageKey, JSON.stringify({
+                    v: 1,
+                    ts: Date.now(),
+                    values: collect(),
+                }));
+            } catch {
+                // Ignore storage failures.
+            }
+        };
+
+        const restore = () => {
+            try {
+                const raw = window.localStorage.getItem(storageKey);
+                if (!raw) return false;
+                const parsed = JSON.parse(raw);
+                const values = parsed && typeof parsed === 'object' ? parsed.values : null;
+                if (!values || typeof values !== 'object') return false;
+
+                const fields = getFields();
+                const handledRadioKeys = new Set();
+                let restoredAny = false;
+
+                fields.forEach((field) => {
+                    if (!shouldPersistField(field)) return;
+                    const key = getFieldKey(field);
+                    if (!(key in values)) return;
+
+                    if (field.type === 'radio') {
+                        if (handledRadioKeys.has(key)) return;
+                        handledRadioKeys.add(key);
+                        const storedValue = String(values[key] ?? '');
+                        fields.forEach((candidate) => {
+                            if (candidate.type === 'radio' && getFieldKey(candidate) === key) {
+                                candidate.checked = candidate.value === storedValue;
+                            }
+                        });
+                        restoredAny = true;
+                        return;
+                    }
+
+                    if (field.type === 'checkbox') {
+                        field.checked = Boolean(values[key]);
+                        restoredAny = true;
+                        return;
+                    }
+
+                    field.value = values[key] == null ? '' : String(values[key]);
+                    restoredAny = true;
+                });
+
+                if (restoredAny && typeof options.onRestore === 'function') {
+                    options.onRestore(values);
+                }
+                return restoredAny;
+            } catch {
+                return false;
+            }
+        };
+
+        const clear = () => {
+            try {
+                window.localStorage.removeItem(storageKey);
+            } catch {
+                // Ignore storage failures.
+            }
+        };
+
+        let saveTimer = 0;
+        const scheduleSave = () => {
+            if (saveTimer) window.clearTimeout(saveTimer);
+            saveTimer = window.setTimeout(save, debounceMs);
+        };
+
+        form.addEventListener('input', scheduleSave);
+        form.addEventListener('change', scheduleSave);
+        form.addEventListener('reset', () => {
+            window.setTimeout(clear, 0);
+        });
+
+        restore();
+
+        return {
+            key: storageKey,
+            save,
+            scheduleSave,
+            clear,
+            restore,
+        };
     }
 
     function applyRevealAnimations() {
@@ -183,16 +310,29 @@
                         <input id="${idPrefix}-phone" name="phone" type="text" maxlength="50" autocomplete="tel">
                     </div>
                     <div>
-                        <label for="${idPrefix}-location">Location</label>
-                        <select id="${idPrefix}-location" name="location" autocomplete="country-name">
-                            <option value="Australia" selected>Australia</option>
+                        <label for="${idPrefix}-location">Location (optional)</label>
+                        <select id="${idPrefix}-location" name="location" autocomplete="off">
+                            <option value="" selected>Select location (optional)</option>
+                            <option value="Australia">Australia</option>
                             <option value="Philippines">Philippines</option>
                             <option value="Other">Other</option>
                         </select>
-                        <div class="service-location-other" hidden>
-                            <label for="${idPrefix}-location-other">Enter location</label>
-                            <input id="${idPrefix}-location-other" name="locationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="address-level2">
-                        </div>
+                    </div>
+                </div>
+
+                <div class="row reason-location-row">
+                    <div>
+                        <label for="${idPrefix}-inquiry-type">Reason for Contact</label>
+                        <select id="${idPrefix}-inquiry-type" name="inquiryType" autocomplete="off" required>
+                            <option value="" selected>Select reason</option>
+                            <option value="new-project">New Project</option>
+                            <option value="job-application">Job Application</option>
+                            <option value="general-inquiry">General Inquiry</option>
+                        </select>
+                    </div>
+                    <div class="service-location-other" hidden>
+                        <label for="${idPrefix}-location-other">Enter location</label>
+                        <input id="${idPrefix}-location-other" name="locationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="off">
                     </div>
                 </div>
 
@@ -204,11 +344,6 @@
                 <div class="honeypot-field" aria-hidden="true">
                     <label for="${idPrefix}-website">Website</label>
                     <input id="${idPrefix}-website" name="website" type="text" tabindex="-1" autocomplete="off">
-                </div>
-
-                <div class="service-captcha-container" hidden>
-                    <p class="captcha-label">Captcha</p>
-                    <div class="service-captcha-target"></div>
                 </div>
 
                 <button type="submit" class="service-submit-btn">Submit inquiry</button>
@@ -286,51 +421,29 @@
         const locationSelect = form.querySelector('[name="location"]');
         const locationOtherWrap = form.querySelector('.service-location-other');
         const locationOtherInput = form.querySelector('[name="locationOther"]');
-        const hcaptchaSiteKey = document.querySelector('meta[name="aoas-hcaptcha-sitekey"]')?.content?.trim() || '';
-        const captchaContainer = form.querySelector('.service-captcha-container');
-        const captchaTarget = form.querySelector('.service-captcha-target');
-        let captchaWidgetId = null;
+        const inquiryTypeSelect = form.querySelector('[name="inquiryType"]');
+        let serviceDraft = null;
 
         const toggleOtherLocation = () => {
             if (!locationSelect || !locationOtherWrap || !locationOtherInput) return;
             const isOther = locationSelect.value === 'Other';
             locationOtherWrap.hidden = !isOther;
-            locationOtherInput.required = isOther;
             if (!isOther) {
                 locationOtherInput.value = '';
             }
-        };
-
-        const initCaptcha = async () => {
-            if (!hcaptchaSiteKey || !captchaContainer || !captchaTarget) return;
-            captchaContainer.hidden = false;
-
-            try {
-                await ensureHcaptchaScript();
-            } catch (error) {
-                setStatus(statusEl, 'Captcha failed to load. Please refresh and try again.', 'error');
-                return;
-            }
-
-            const render = () => {
-                if (!window.hcaptcha || captchaWidgetId !== null) return;
-                captchaWidgetId = window.hcaptcha.render(captchaTarget, {
-                    sitekey: hcaptchaSiteKey,
-                });
-            };
-
-            render();
-            const poll = setInterval(() => {
-                if (window.hcaptcha) {
-                    render();
-                    clearInterval(poll);
-                }
-            }, 250);
+            serviceDraft?.scheduleSave();
         };
 
         toggleOtherLocation();
-        initCaptcha();
         locationSelect?.addEventListener('change', toggleOtherLocation);
+
+        serviceDraft = setupLocalFormDraft(form, {
+            scope: `service-inquiry:${service || detectServiceKey()}`,
+            excludeFields: ['website'],
+            onRestore: () => {
+                toggleOtherLocation();
+            },
+        });
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -340,13 +453,14 @@
             const email = String(formData.get('email') || '').trim();
             const phone = String(formData.get('phone') || '').trim();
             const message = String(formData.get('message') || '').trim();
-            const locationValue = String(formData.get('location') || 'Australia').trim();
+            const inquiryType = String(formData.get('inquiryType') || inquiryTypeSelect?.value || '').trim();
+            const locationValue = String(formData.get('location') || '').trim();
             const locationOther = String(formData.get('locationOther') || '').trim();
-            const location = locationValue === 'Other' ? (locationOther || 'Other') : locationValue;
+            const location = locationValue === 'Other' ? locationOther : locationValue;
             const website = String(formData.get('website') || '').trim();
 
-            if (!name || !email || !message) {
-                setStatus(statusEl, 'Please complete name, email, and message.', 'error');
+            if (!inquiryType || !name || !email || !message) {
+                setStatus(statusEl, 'Please complete reason for contact, name, email, and message.', 'error');
                 return;
             }
 
@@ -359,19 +473,6 @@
             if (message.length < 8) {
                 setStatus(statusEl, 'Please share a little more detail in your message.', 'error');
                 return;
-            }
-
-            let captchaToken = '';
-            if (hcaptchaSiteKey) {
-                if (!window.hcaptcha || captchaWidgetId === null) {
-                    setStatus(statusEl, 'Captcha is loading. Please try again.', 'error');
-                    return;
-                }
-                captchaToken = window.hcaptcha.getResponse(captchaWidgetId);
-                if (!captchaToken) {
-                    setStatus(statusEl, 'Please complete the captcha before submitting.', 'error');
-                    return;
-                }
             }
 
             const submitButton = form.querySelector('button[type="submit"]');
@@ -391,6 +492,7 @@
                     body: JSON.stringify({
                         source: `service-page:${service}`,
                         service,
+                        inquiryType,
                         name,
                         email,
                         phone,
@@ -399,7 +501,6 @@
                         sourcePage: window.location.pathname,
                         pageUrl: window.location.href,
                         website,
-                        captchaToken,
                         utm: {
                             source: new URLSearchParams(window.location.search).get('utm_source') || '',
                             medium: new URLSearchParams(window.location.search).get('utm_medium') || '',
@@ -423,14 +524,13 @@
 
                 trackEvent('service_page_inquiry_submitted', {
                     service,
+                    inquiryType,
                     sourcePage: window.location.pathname,
                 });
                 setStatus(statusEl, payload.message || 'Thank you. We received your inquiry and will follow up shortly.', 'success');
+                serviceDraft?.clear();
                 form.reset();
                 toggleOtherLocation();
-                if (window.hcaptcha && captchaWidgetId !== null) {
-                    window.hcaptcha.reset(captchaWidgetId);
-                }
             } catch (error) {
                 setStatus(statusEl, error.message || 'Unable to submit your inquiry right now.', 'error');
             } finally {

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-AU">
 
 <head>
@@ -11,7 +11,6 @@
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <meta name="geo.region" content="AU">
     <meta name="geo.country" content="Australia">
-    <meta name="aoas-hcaptcha-sitekey" content="">
 
     <link rel="canonical" href="https://www.attainmentofficeadserv.org/services/data-entry">
     <link rel="alternate" hreflang="en-AU" href="https://www.attainmentofficeadserv.org/services/data-entry">
@@ -34,7 +33,7 @@
     <meta name="twitter:description" content="Structured data entry and data processing support for Australian businesses, including cleanup, validation, and recurring admin data workflows.">
     <meta name="twitter:image" content="https://www.attainmentofficeadserv.org/assets/images/seo/open-graph.png">
 
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260224f">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260304s">
     <link rel="icon" type="image/x-icon" href="/assets/icons/favicon.ico">
 
     <script type="application/ld+json">
@@ -164,16 +163,29 @@
                             <input id="data-entry-phone" name="phone" type="text" maxlength="50" autocomplete="tel">
                         </div>
                         <div>
-                            <label for="data-entry-location">Location</label>
-                            <select id="data-entry-location" name="location" autocomplete="country-name">
-                                <option value="Australia" selected>Australia</option>
+                            <label for="data-entry-location">Location (optional)</label>
+                            <select id="data-entry-location" name="location" autocomplete="off">
+                                <option value="" selected>Select location (optional)</option>
+                                <option value="Australia">Australia</option>
                                 <option value="Philippines">Philippines</option>
                                 <option value="Other">Other</option>
                             </select>
-                            <div class="service-location-other" hidden>
-                                <label for="data-entry-location-other">Enter location</label>
-                                <input id="data-entry-location-other" name="locationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="address-level2">
-                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row reason-location-row">
+                        <div>
+                            <label for="data-entry-inquiry-type">Reason for Contact</label>
+                            <select id="data-entry-inquiry-type" name="inquiryType" autocomplete="off" required>
+                                <option value="" selected>Select reason</option>
+                                <option value="new-project">New Project</option>
+                                <option value="job-application">Job Application</option>
+                                <option value="general-inquiry">General Inquiry</option>
+                            </select>
+                        </div>
+                        <div class="service-location-other" hidden>
+                            <label for="data-entry-location-other">Enter location</label>
+                            <input id="data-entry-location-other" name="locationOther" type="text" maxlength="120" placeholder="City / Country" autocomplete="off">
                         </div>
                     </div>
 
@@ -185,11 +197,6 @@
                     <div class="honeypot-field" aria-hidden="true">
                         <label for="data-entry-website">Website</label>
                         <input id="data-entry-website" name="website" type="text" tabindex="-1" autocomplete="off">
-                    </div>
-
-                    <div class="service-captcha-container" hidden>
-                        <p class="captcha-label">Captcha</p>
-                        <div class="service-captcha-target"></div>
                     </div>
 
                     <button type="submit" class="service-submit-btn">Submit inquiry</button>
@@ -215,21 +222,24 @@
                     <div class="footer-column">
                         <h4 class="footer-heading">ADDRESS</h4>
                         <p class="footer-text">
-                            Purok Mais, Brgy Paculob Dumanjug, Cebu 6035 PHILIPPINES
+                            Purok Mais, Brgy Paculob Dumanjug, Cebu
+                            <span class="footer-indent-line">6035 PHILIPPINES</span>
                         </p>
                     </div>
 
                     <div class="footer-column">
                         <h4 class="footer-heading">CALL US</h4>
                         <p class="footer-text">
-                            Book via Phone Call (032) 238-6354
+                            Book via Phone Call
+                            <span class="footer-indent-line">(032) 238-6354</span>
                         </p>
                     </div>
 
                     <div class="footer-column">
                         <h4 class="footer-heading">OPENING HOURS</h4>
                         <p class="footer-text">
-                            Monday To Friday 06:00 AM to 02:00 PM PH
+                            Monday To Friday
+                            <span class="footer-indent-line">06:00 AM to 02:00 PM PH TIME</span>
                         </p>
                     </div>
 
@@ -282,12 +292,14 @@
         </div>
     </footer>
 
+    <script src="/assets/js/theme-toggle.js?v=20260304b"></script>
     <script src="/assets/js/tracker.js"></script>
-    <script src="/assets/js/chatbot.js?v=20260224a"></script>
-    <script src="service-page.js?v=20260223c"></script>
+    <script src="/assets/js/chatbot.js?v=20260304f"></script>
+    <script src="service-page.js?v=20260304i"></script>
 </body>
 
 </html>
+
 
 
 

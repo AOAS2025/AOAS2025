@@ -33,7 +33,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260224f">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260304s">
     <!-- Favicon - Multiple formats for best crawler compatibility -->
     <link rel="icon" type="image/x-icon" href="/assets/icons/favicon.ico">
     <link rel="icon" type="image/ico" href="/assets/icons/favicon.ico">
@@ -473,7 +473,8 @@
 
         /* Form Overrides */
         .form-container {
-            max-width: 640px;
+            max-width: 100%;
+            width: 100%;
             margin: 0 auto;
             padding: 12px 10px;
             background: var(--careers-surface);
@@ -489,13 +490,14 @@
         }
 
         .section.section-light.application-section {
-            max-width: 700px;
+            max-width: 790px;
+            width: min(100%, 790px);
             margin: 8px auto 18px;
-            padding: 10px 8px 12px;
-            border: 1px solid #90a79c !important;
-            border-radius: 14px;
-            background: linear-gradient(180deg, #c3d5cc 0%, #b9cdc2 100%) !important;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.09);
+            padding: 0 12px;
+            border: none !important;
+            border-radius: 0;
+            background: transparent !important;
+            box-shadow: none;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
@@ -598,6 +600,12 @@
         }
 
         .wizard-step-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 28px;
+            box-sizing: border-box;
             border: 1px solid #d7e2dc;
             background: #f3f8f6;
             color: #475569;
@@ -620,6 +628,51 @@
             border-color: #16a34a;
             background: #f0fdf4;
             color: #166534;
+        }
+
+        .application-header {
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-height: 30px;
+            margin-bottom: 6px;
+        }
+
+        .application-header h2 {
+            margin-bottom: 0;
+        }
+
+        .wizard-header-actions {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .wizard-proceed-btn {
+            border: 1px solid var(--careers-primary);
+            background: linear-gradient(135deg, var(--careers-primary), var(--careers-primary-strong));
+            color: #ffffff;
+            border-radius: 999px;
+            padding: 6px 18px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(14, 138, 102, 0.26);
+        }
+
+        .wizard-proceed-btn[hidden] {
+            display: none !important;
+        }
+
+        .wizard-proceed-btn:disabled {
+            opacity: 0.58;
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
         .wizard-step-pane {
@@ -815,13 +868,28 @@
         }
 
         .wizard-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-            margin-top: 2px;
+            display: none !important;
+        }
+
+        .modal-footer.modal-footer-multi {
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .modal-button.modal-button-secondary {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #0f172a;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.14);
+        }
+
+        .modal-button.modal-button-secondary:hover {
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
         }
 
         .wizard-btn {
+            width: 100%;
+            min-height: 38px;
             border: 1px solid #cdd9e3;
             background: #f8fbfd;
             color: #1f2937;
@@ -865,16 +933,18 @@
 
         .btn-submit {
             width: 100%;
+            min-height: 38px;
+            margin-top: 0;
             padding: 7px 8px;
             font-size: 0.76rem;
             background: linear-gradient(135deg, var(--careers-primary), var(--careers-primary-strong));
             color: white;
             border: none;
             border-radius: 8px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            grid-column: 1 / -1;
+            grid-column: 2 / 3;
         }
 
         .btn-submit:hover {
@@ -1012,10 +1082,10 @@
 
             .section.section-light.application-section {
                 margin: 6px 2px 12px;
-                padding: 8px 6px 10px;
-                border-radius: 12px;
-                background: linear-gradient(180deg, #bfd1c7 0%, #b3c7bb 100%) !important;
-                border-color: #8ea59a !important;
+                padding: 0 8px;
+                border: none !important;
+                border-radius: 0;
+                background: transparent !important;
             }
 
             .form-container h2 {
@@ -1110,6 +1180,7 @@
             }
 
             .wizard-actions {
+                grid-template-columns: 1fr 1fr;
                 gap: 4px;
             }
 
@@ -1182,6 +1253,187 @@
         .leaflet-control-layers {
             border-radius: 8px !important;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        /* Dark mode compatibility for Careers custom UI */
+        html[data-theme="dark"] {
+            --careers-bg: #0b1220;
+            --careers-surface: #0f172a;
+            --careers-surface-soft: #111827;
+            --careers-border: #334155;
+            --careers-text: #e5e7eb;
+            --careers-muted: #94a3b8;
+            --careers-primary: #10b981;
+            --careers-primary-strong: #059669;
+            --careers-shadow: 0 12px 24px rgba(2, 6, 23, 0.42);
+            --careers-shadow-soft: 0 8px 18px rgba(2, 6, 23, 0.36);
+        }
+
+        html[data-theme="dark"] body {
+            background: radial-gradient(circle at 12% 8%, #0f1b2a 0%, var(--careers-bg) 54%, #111827 100%);
+            color: var(--careers-text);
+        }
+
+        html[data-theme="dark"] .overview,
+        html[data-theme="dark"] .section-block,
+        html[data-theme="dark"] .map-section,
+        html[data-theme="dark"] .form-container {
+            background: var(--careers-surface);
+            border-color: var(--careers-border);
+            box-shadow: var(--careers-shadow-soft);
+        }
+
+        html[data-theme="dark"] .section-block h3,
+        html[data-theme="dark"] .map-section h3 {
+            border-bottom-color: #334155;
+        }
+
+        html[data-theme="dark"] .clean-list li,
+        html[data-theme="dark"] .resp-card ul li {
+            color: #cbd5e1;
+        }
+
+        html[data-theme="dark"] .overview-item span {
+            color: #cbd5e1;
+        }
+
+        html[data-theme="dark"] .resp-card {
+            background: #1e293b;
+            border-color: #334155;
+        }
+
+        html[data-theme="dark"] .application-panel {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            box-shadow: 0 10px 22px rgba(2, 6, 23, 0.46);
+        }
+
+        html[data-theme="dark"] .section.section-light.application-section {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="dark"] .section.section-light.application-section .form-container,
+        html[data-theme="dark"] .section.section-light.application-section .form-container:not(.application-panel),
+        html[data-theme="dark"] .application-panel .wizard-step-pane,
+        html[data-theme="dark"] .section.section-light.application-section .map-section {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+        }
+
+        html[data-theme="dark"] .wizard-progress {
+            background: #1f2937;
+        }
+
+        html[data-theme="dark"] .wizard-step-indicator {
+            border-color: #334155 !important;
+            background: #111827 !important;
+            color: #cbd5e1 !important;
+        }
+
+        html[data-theme="dark"] .wizard-step-indicator.active {
+            border-color: #10b981 !important;
+            background: rgba(16, 185, 129, 0.16) !important;
+            color: #6ee7b7 !important;
+        }
+
+        html[data-theme="dark"] .wizard-step-indicator.done {
+            border-color: #16a34a !important;
+            background: rgba(22, 163, 74, 0.18) !important;
+            color: #86efac !important;
+        }
+
+        html[data-theme="dark"] .wizard-step-title,
+        html[data-theme="dark"] .form-group label:not(.radio-option),
+        html[data-theme="dark"] .field-label,
+        html[data-theme="dark"] .coord-group label {
+            color: #e5e7eb;
+        }
+
+        html[data-theme="dark"] .wizard-step-title {
+            border-bottom-color: #334155;
+        }
+
+        html[data-theme="dark"] .form-group input:not([type="radio"]):not([type="checkbox"]),
+        html[data-theme="dark"] .form-group textarea,
+        html[data-theme="dark"] .coord-group input {
+            background-color: #0b1220 !important;
+            border-color: #334155 !important;
+            color: #e5e7eb !important;
+        }
+
+        html[data-theme="dark"] .form-group input:not([type="radio"]):not([type="checkbox"]):focus,
+        html[data-theme="dark"] .form-group textarea:focus,
+        html[data-theme="dark"] .coord-group input:focus {
+            background-color: #0f172a !important;
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+        }
+
+        html[data-theme="dark"] .form-group input::placeholder,
+        html[data-theme="dark"] .form-group textarea::placeholder,
+        html[data-theme="dark"] .coord-group input::placeholder {
+            color: #94a3b8;
+        }
+
+        html[data-theme="dark"] .radio-option,
+        html[data-theme="dark"] .application-panel .radio-option {
+            background-color: #111827 !important;
+            border-color: #334155 !important;
+        }
+
+        html[data-theme="dark"] .radio-option:hover {
+            border-color: #10b981 !important;
+            background-color: #0f172a !important;
+        }
+
+        html[data-theme="dark"] .radio-option:has(input:checked) {
+            border-color: #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.15) !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
+        }
+
+        html[data-theme="dark"] .radio-option .radio-label {
+            color: #e5e7eb !important;
+        }
+
+        html[data-theme="dark"] .form-group small {
+            color: #94a3b8;
+        }
+
+        html[data-theme="dark"] .map-instruction {
+            background: #0f1c33;
+            color: #bfdbfe;
+            border-left-color: #3b82f6;
+        }
+
+        html[data-theme="dark"] #map {
+            border: 1px solid #334155;
+            box-shadow: 0 8px 20px rgba(2, 6, 23, 0.32);
+        }
+
+        html[data-theme="dark"] .map-info {
+            background: #1f2937;
+            border-color: #334155;
+            color: #cbd5e1;
+        }
+
+        html[data-theme="dark"] .map-info strong {
+            color: #6ee7b7;
+        }
+
+        html[data-theme="dark"] .leaflet-popup-content-wrapper,
+        html[data-theme="dark"] .leaflet-popup-tip {
+            background: #0f172a;
+            color: #e5e7eb;
+            border: 1px solid #334155;
+        }
+
+        html[data-theme="dark"] .modal-button.modal-button-secondary {
+            background: linear-gradient(135deg, #334155 0%, #1f2937 100%);
+            color: #e5e7eb;
+            box-shadow: 0 4px 10px rgba(2, 6, 23, 0.36);
         }
     </style>
 </head>
@@ -1301,7 +1553,12 @@
     <!-- Application Form -->
     <section class="section section-light application-section">
         <div class="form-container application-panel">
-            <h2>Application</h2>
+            <div class="application-header">
+                <h2>Application</h2>
+                <div class="wizard-header-actions">
+                    <button type="button" class="wizard-proceed-btn" id="wizardProceed" hidden>Proceed</button>
+                </div>
+            </div>
 
             <form class="careers-form" id="careersForm" enctype="multipart/form-data" novalidate>
                 <div class="form-wizard" aria-label="Application progress">
@@ -1568,17 +1825,26 @@
                 <div class="footer-info-grid">
                     <div class="footer-column">
                         <h4 class="footer-heading">ADDRESS</h4>
-                        <p class="footer-text">Purok Mais, Brgy Paculob Dumanjug, Cebu 6035 PHILIPPINES</p>
+                        <p class="footer-text">
+                            Purok Mais, Brgy Paculob Dumanjug, Cebu
+                            <span class="footer-indent-line">6035 PHILIPPINES</span>
+                        </p>
                     </div>
 
                     <div class="footer-column">
                         <h4 class="footer-heading">CALL US</h4>
-                        <p class="footer-text">Book via Phone Call (032) 238-6354</p>
+                        <p class="footer-text">
+                            Book via Phone Call
+                            <span class="footer-indent-line">(032) 238-6354</span>
+                        </p>
                     </div>
 
                     <div class="footer-column">
                         <h4 class="footer-heading">OPENING HOURS</h4>
-                        <p class="footer-text">Monday To Friday 06:00 AM to 02:00 PM PH</p>
+                        <p class="footer-text">
+                            Monday To Friday
+                            <span class="footer-indent-line">06:00 AM to 02:00 PM PH TIME</span>
+                        </p>
                     </div>
 
                     <div class="footer-column">
@@ -1632,9 +1898,10 @@
         </div>
     </div>
 
+    <script src="/assets/js/theme-toggle.js?v=20260304b"></script>
     <script src="/assets/js/tracker.js"></script>
-    <script src="/assets/js/script.js?v=20260223d"></script>
-    <script src="/assets/js/chatbot.js?v=20260224a"></script>
+    <script src="/assets/js/script.js?v=20260304l"></script>
+    <script src="/assets/js/chatbot.js?v=20260304f"></script>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1644,24 +1911,81 @@
     <script>
 
         // Helper function to show custom modal
-        function showModal(message, title = 'Notification') {
+        function showModal(message, title = 'Notification', options = {}) {
             const modal = document.getElementById('customModal');
             const modalTitle = document.getElementById('modalTitle');
             const modalMessage = document.getElementById('modalMessage');
             const modalClose = document.getElementById('modalClose');
             const modalButton = document.getElementById('modalButton');
+            const modalFooter = modal.querySelector('.modal-footer');
+            const modalOverlay = modal.querySelector('.modal-overlay');
+
+            const type = options.type || '';
+            const buttons = Array.isArray(options.buttons) && options.buttons.length
+                ? options.buttons
+                : [{ text: 'OK', variant: 'primary' }];
 
             modalTitle.textContent = title;
             modalMessage.textContent = message;
-            modal.style.display = 'flex'; modal.classList.add('active');
+            modal.className = `custom-modal ${type}`.trim();
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+
+            modalFooter.querySelectorAll('.modal-button-extra').forEach((button) => button.remove());
+            modalFooter.classList.toggle('modal-footer-multi', buttons.length > 1);
 
             const closeModal = () => {
-                modal.style.display = 'none'; modal.classList.remove('active');
+                modal.style.display = 'none';
+                modal.classList.remove('active');
+                document.removeEventListener('keydown', onKeyDown);
             };
 
+            const onKeyDown = (event) => {
+                if (event.key === 'Escape') {
+                    closeModal();
+                }
+            };
+
+            const primaryConfig = buttons[buttons.length - 1];
+            modalButton.className = 'modal-button';
+            if (primaryConfig.variant === 'secondary') {
+                modalButton.classList.add('modal-button-secondary');
+            }
+            modalButton.textContent = primaryConfig.text || 'OK';
+            modalButton.onclick = () => {
+                if (typeof primaryConfig.onClick === 'function') {
+                    primaryConfig.onClick();
+                }
+                if (primaryConfig.close !== false) {
+                    closeModal();
+                }
+            };
+
+            buttons.slice(0, -1).forEach((buttonConfig, index) => {
+                const extraButton = document.createElement('button');
+                extraButton.type = 'button';
+                extraButton.className = 'modal-button modal-button-extra';
+                if (buttonConfig.variant === 'secondary') {
+                    extraButton.classList.add('modal-button-secondary');
+                }
+                extraButton.textContent = buttonConfig.text || (index === 0 ? 'Back' : 'Cancel');
+                extraButton.onclick = () => {
+                    if (typeof buttonConfig.onClick === 'function') {
+                        buttonConfig.onClick();
+                    }
+                    if (buttonConfig.close !== false) {
+                        closeModal();
+                    }
+                };
+                modalFooter.insertBefore(extraButton, modalButton);
+            });
+
             modalClose.onclick = closeModal;
-            modalButton.onclick = closeModal;
-            modal.querySelector('.modal-overlay').onclick = closeModal;
+            modalOverlay.onclick = options.closeOnOverlay === false ? null : closeModal;
+            document.addEventListener('keydown', onKeyDown);
+
+            const firstButton = modalFooter.querySelector('button');
+            if (firstButton) firstButton.focus();
         }
 
         // Careers multi-step wizard
@@ -1675,9 +1999,14 @@
             const prevBtn = document.getElementById('wizardPrev');
             const nextBtn = document.getElementById('wizardNext');
             const submitBtn = document.getElementById('wizardSubmit');
+            const proceedBtn = document.getElementById('wizardProceed');
+            const actionsRow = careersForm.querySelector('.wizard-actions');
             if (!panes.length || !progressFill || !prevBtn || !nextBtn || !submitBtn) return;
 
             let currentStep = 0;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const stepPromptShown = panes.map(() => false);
+            let showProceedHeader = false;
 
             function scrollWizardIntoView() {
                 if (window.innerWidth > 768) return;
@@ -1693,11 +2022,16 @@
                 return (label && label.textContent ? label.textContent.trim() : 'This field');
             }
 
-            function validateCurrentStep() {
-                const pane = panes[currentStep];
-                if (!pane) return true;
+            function isCompensationField(field) {
+                return field && (field.id === 'compensation' || field.name === 'compensation');
+            }
 
-                const requiredFields = Array.from(pane.querySelectorAll('[required]'));
+            function hasValidCompensation(value) {
+                const digitCount = String(value || '').replace(/\D/g, '').length;
+                return digitCount >= 5;
+            }
+
+            function validateFields(requiredFields) {
                 const checkedRadioGroups = new Set();
 
                 for (const field of requiredFields) {
@@ -1727,19 +2061,170 @@
                     }
 
                     if (field.type === 'email') {
-                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                         if (!emailRegex.test(value)) {
                             showModal('Please enter a valid email address.', 'Invalid Email');
                             return false;
                         }
+                    }
+
+                    if (isCompensationField(field) && !hasValidCompensation(value)) {
+                        showModal('Expected compensation must be at least 5 digits (example: 15000).', 'Invalid Compensation');
+                        return false;
                     }
                 }
 
                 return true;
             }
 
+            function isFieldComplete(field) {
+                if (field.type === 'radio') {
+                    return Boolean(careersForm.querySelector(`input[name="${field.name}"]:checked`));
+                }
+
+                if (field.type === 'file') {
+                    return Boolean(field.files && field.files.length > 0);
+                }
+
+                const value = (field.value || '').trim();
+                if (!value) return false;
+                if (field.type === 'email') return emailRegex.test(value);
+                if (isCompensationField(field)) return hasValidCompensation(value);
+                return true;
+            }
+
+            function isStepComplete(stepIndex = currentStep) {
+                const pane = panes[stepIndex];
+                if (!pane) return true;
+
+                const requiredFields = Array.from(pane.querySelectorAll('[required]'));
+                const checkedRadioGroups = new Set();
+
+                for (const field of requiredFields) {
+                    if (field.type === 'radio') {
+                        if (checkedRadioGroups.has(field.name)) continue;
+                        checkedRadioGroups.add(field.name);
+                    }
+
+                    if (!isFieldComplete(field)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            function validateCurrentStep() {
+                const pane = panes[currentStep];
+                if (!pane) return true;
+                return validateFields(Array.from(pane.querySelectorAll('[required]')));
+            }
+
+            function validateAllSteps() {
+                return validateFields(Array.from(careersForm.querySelectorAll('[required]')));
+            }
+
+            function updateProceedButton() {
+                if (!proceedBtn) return;
+                const isFinalStep = currentStep === panes.length - 1;
+                proceedBtn.textContent = isFinalStep ? 'Proceed to Submit' : 'Proceed';
+                proceedBtn.hidden = !showProceedHeader;
+                proceedBtn.disabled = !isStepComplete(currentStep);
+            }
+
+            function openStepChoiceModal(stepIndex = currentStep) {
+                const isFinalStep = stepIndex === panes.length - 1;
+                if (isFinalStep) {
+                    showModal(
+                        'All required fields are complete. You can submit now or go back to edit.',
+                        'Ready to Submit',
+                        {
+                            type: 'success',
+                            buttons: [
+                                {
+                                    text: 'Back to Edit',
+                                    variant: 'secondary',
+                                    onClick: function () {
+                                        showProceedHeader = true;
+                                        updateProceedButton();
+                                    }
+                                },
+                                {
+                                    text: 'Apply Now',
+                                    onClick: function () {
+                                        careersForm.requestSubmit();
+                                    }
+                                }
+                            ]
+                        }
+                    );
+                    return;
+                }
+
+                showModal(
+                    'This step is complete. Continue to the next step or go back to edit.',
+                    'Step Complete',
+                    {
+                        buttons: [
+                            {
+                                text: 'Back to Edit',
+                                variant: 'secondary',
+                                onClick: function () {
+                                    showProceedHeader = true;
+                                    updateProceedButton();
+                                }
+                            },
+                            {
+                                text: 'Next',
+                                onClick: function () {
+                                    if (currentStep !== stepIndex) return;
+                                    setStep(stepIndex + 1);
+                                    scrollWizardIntoView();
+                                }
+                            }
+                        ]
+                    }
+                );
+            }
+
+            function updateActionButtons() {
+                const currentStepComplete = isStepComplete(currentStep);
+
+                prevBtn.hidden = true;
+                nextBtn.hidden = true;
+                submitBtn.hidden = true;
+                if (actionsRow) {
+                    actionsRow.classList.add('is-empty');
+                }
+
+                if (!currentStepComplete) {
+                    stepPromptShown[currentStep] = false;
+                    updateProceedButton();
+                    return;
+                }
+
+                if (showProceedHeader) {
+                    updateProceedButton();
+                    return;
+                }
+
+                if (stepPromptShown[currentStep]) {
+                    showProceedHeader = true;
+                    updateProceedButton();
+                    return;
+                }
+                stepPromptShown[currentStep] = true;
+
+                const completedStep = currentStep;
+                window.setTimeout(function () {
+                    if (currentStep !== completedStep) return;
+                    if (!isStepComplete(completedStep)) return;
+                    openStepChoiceModal(completedStep);
+                }, 120);
+            }
+
             function setStep(index) {
                 currentStep = Math.max(0, Math.min(index, panes.length - 1));
+                showProceedHeader = false;
 
                 panes.forEach((pane, idx) => {
                     pane.classList.toggle('is-active', idx === currentStep);
@@ -1752,10 +2237,26 @@
 
                 const progressPercent = ((currentStep + 1) / panes.length) * 100;
                 progressFill.style.width = `${progressPercent}%`;
+                updateActionButtons();
+            }
 
-                prevBtn.hidden = currentStep === 0;
-                nextBtn.hidden = currentStep === panes.length - 1;
-                submitBtn.hidden = currentStep !== panes.length - 1;
+            if (proceedBtn) {
+                proceedBtn.addEventListener('click', function () {
+                    if (!isStepComplete(currentStep)) {
+                        showModal('Please complete all required fields before proceeding.', 'Incomplete Step', { type: 'error' });
+                        return;
+                    }
+
+                    showProceedHeader = false;
+
+                    if (currentStep < panes.length - 1) {
+                        setStep(currentStep + 1);
+                        scrollWizardIntoView();
+                        return;
+                    }
+
+                    careersForm.requestSubmit();
+                });
             }
 
             prevBtn.addEventListener('click', function () {
@@ -1771,24 +2272,56 @@
 
             indicators.forEach((indicator, idx) => {
                 indicator.addEventListener('click', function () {
-                    if (idx === currentStep) return;
+                    if (idx === currentStep) {
+                        if (isStepComplete(currentStep)) {
+                            openStepChoiceModal(currentStep);
+                        }
+                        return;
+                    }
                     if (idx < currentStep) {
                         setStep(idx);
                         scrollWizardIntoView();
                         return;
                     }
-                    if (idx === currentStep + 1 && validateCurrentStep()) {
-                        setStep(idx);
-                        scrollWizardIntoView();
+                    if (idx === currentStep + 1) {
+                        if (!isStepComplete(currentStep)) {
+                            showModal('Please complete all required fields before moving to the next step.', 'Incomplete Step', { type: 'error' });
+                            return;
+                        }
+                        openStepChoiceModal(currentStep);
                     }
                 });
             });
 
             careersForm.addEventListener('keydown', function (event) {
                 if (event.key !== 'Enter' || event.target.tagName === 'TEXTAREA') return;
-                if (currentStep < panes.length - 1) {
+                event.preventDefault();
+                if (!isStepComplete(currentStep)) {
+                    showModal('Please complete all required fields before moving to the next step.', 'Incomplete Step', { type: 'error' });
+                    return;
+                }
+                openStepChoiceModal(currentStep);
+            });
+
+            careersForm.addEventListener('input', function () {
+                updateActionButtons();
+            });
+
+            careersForm.addEventListener('change', function () {
+                updateActionButtons();
+            });
+
+            careersForm.addEventListener('aoas:careers-submit-failed', function () {
+                showProceedHeader = true;
+                stepPromptShown[currentStep] = true;
+                updateProceedButton();
+            });
+
+            careersForm.addEventListener('submit', function (event) {
+                if (!validateAllSteps()) {
                     event.preventDefault();
-                    nextBtn.click();
+                    event.stopImmediatePropagation();
+                    return;
                 }
             });
 
@@ -2418,6 +2951,8 @@
 </body>
 
 </html>
+
+
 
 
 

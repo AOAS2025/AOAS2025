@@ -1,4 +1,4 @@
-const RESEND_API_KEY = process.env.RESEND_API_KEY?.trim();
+require('dotenv').config();
 
 module.exports = async (req, res) => {
   const origin = req.headers.origin;
@@ -13,11 +13,14 @@ module.exports = async (req, res) => {
     return;
   }
 
-  res.json({ 
-    status: 'ok', 
+  // Read at request-time so changes in local .env are reflected after restart.
+  const runtimeResendKey = (process.env.RESEND_API_KEY || '').trim();
+
+  res.json({
+    status: 'ok',
     message: 'Server is running',
-    resendConfigured: !!RESEND_API_KEY,
-    apiKeyLength: RESEND_API_KEY ? RESEND_API_KEY.length : 0
+    resendConfigured: !!runtimeResendKey,
+    apiKeyLength: runtimeResendKey ? runtimeResendKey.length : 0
   });
 };
 

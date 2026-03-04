@@ -106,6 +106,60 @@ module.exports = async (req, res) => {
       coverLetterFileName: sanitizeHtml(coverLetterFileName)
     };
 
+    const nowPh = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Manila',
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    });
+
+    const responseBadge = (value, yesIsPositive = true) => {
+      const rawValue = String(value || 'Not answered').trim() || 'Not answered';
+      const normalized = rawValue.toLowerCase();
+      let tone = { fg: '#334155', bg: '#e2e8f0' };
+
+      if (normalized === 'yes' || normalized === 'no') {
+        const isPositive = yesIsPositive ? normalized === 'yes' : normalized === 'no';
+        tone = isPositive
+          ? { fg: '#166534', bg: '#dcfce7' }
+          : { fg: '#991b1b', bg: '#fee2e2' };
+      }
+
+      return `<span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;color:${tone.fg};background:${tone.bg};">${rawValue}</span>`;
+    };
+
+    const screeningRows = [
+      {
+        label: 'Willing to adjust work hours / schedule',
+        value: sanitizedData.flexibleSchedule,
+        yesIsPositive: true
+      },
+      {
+        label: 'Legally authorized to work',
+        value: sanitizedData.workAuthorization,
+        yesIsPositive: true
+      },
+      {
+        label: 'Willing to work weekends / holidays',
+        value: sanitizedData.weekendAvailability,
+        yesIsPositive: true
+      },
+      {
+        label: 'Has reliable transportation',
+        value: sanitizedData.reliableTransportation,
+        yesIsPositive: true
+      },
+      {
+        label: 'Previously terminated from a job',
+        value: sanitizedData.previousTermination,
+        yesIsPositive: false
+      }
+    ].map((item) => `
+      <tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;color:#334155;font-size:13px;">${item.label}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;text-align:right;">${responseBadge(item.value, item.yesIsPositive)}</td>
+      </tr>
+    `).join('');
+
     if (!resend || !RESEND_API_KEY) {
       console.error('❌ Resend API key not configured');
       return res.status(500).json({
@@ -134,122 +188,98 @@ module.exports = async (req, res) => {
     // Prepare email options
     const emailOptions = {
       from: 'APPLICATION FORM <noreply@attainmentofficeadserv.org>',
+      // Keep noreply sender but route Gmail replies to applicant email.
+      reply_to: email,
       to: ['support@attainmentofficeadserv.org'],
       subject: `New Job Application from ${sanitizedData.fullName}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background: #f9fafb;">
-          <div style="background: linear-gradient(135deg, #5B9DD9 0%, #3A7AB0 100%); padding: 30px; border-radius: 12px 12px 0 0;">
-            <h2 style="color: #ffffff; margin: 0; font-size: 28px; text-align: center;">
-              New Job Application
-            </h2>
-          </div>
-          <div style="background: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            <h3 style="color: #22c55e; border-bottom: 2px solid #22c55e; padding-bottom: 10px; margin-top: 0;">
-              Contact Information
-            </h3>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a; width: 180px;">Full Name:</td>
-                <td style="padding: 10px 0; color: #4b5563;">${sanitizedData.fullName}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Email:</td>
-                <td style="padding: 10px 0; color: #4b5563;">${sanitizedData.email}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Phone Number:</td>
-                <td style="padding: 10px 0; color: #4b5563;">${sanitizedData.phone}</td>
-              </tr>
-            </table>
-
-            <h3 style="color: #22c55e; border-bottom: 2px solid #22c55e; padding-bottom: 10px;">
-              Work Preferences
-            </h3>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a; width: 180px;">Preferred Working Hours:</td>
-                <td style="padding: 10px 0; color: #4b5563;">${sanitizedData.workingHours || 'Not specified'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Availability:</td>
-                <td style="padding: 10px 0; color: #4b5563;">${sanitizedData.availability || 'Not specified'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Years of Experience:</td>
-                <td style="padding: 10px 0; color: #4b5563;">${sanitizedData.yearsExperience || 'Not specified'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Expected Compensation:</td>
-                <td style="padding: 10px 0; color: #4b5563;">${sanitizedData.compensation || 'Not specified'}</td>
-              </tr>
-            </table>
-
-            <h3 style="color: #22c55e; border-bottom: 2px solid #22c55e; padding-bottom: 10px;">
-              Screening Questions
-            </h3>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a; width: 70%;">Willing to adjust work hours/schedule:</td>
-                <td style="padding: 10px 0; color: ${sanitizedData.flexibleSchedule === 'Yes' ? '#22c55e' : '#ef4444'}; font-weight: bold;">${sanitizedData.flexibleSchedule || 'Not answered'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Legally authorized to work:</td>
-                <td style="padding: 10px 0; color: ${sanitizedData.workAuthorization === 'Yes' ? '#22c55e' : '#ef4444'}; font-weight: bold;">${sanitizedData.workAuthorization || 'Not answered'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Willing to work weekends/holidays:</td>
-                <td style="padding: 10px 0; color: ${sanitizedData.weekendAvailability === 'Yes' ? '#22c55e' : '#ef4444'}; font-weight: bold;">${sanitizedData.weekendAvailability || 'Not answered'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Has reliable transportation:</td>
-                <td style="padding: 10px 0; color: ${sanitizedData.reliableTransportation === 'Yes' ? '#22c55e' : '#ef4444'}; font-weight: bold;">${sanitizedData.reliableTransportation || 'Not answered'}</td>
-              </tr>
-              <tr>
-                <td style="padding: 10px 0; font-weight: bold; color: #1a1a1a;">Previously terminated from a job:</td>
-                <td style="padding: 10px 0; color: ${sanitizedData.previousTermination === 'No' ? '#22c55e' : '#ef4444'}; font-weight: bold;">${sanitizedData.previousTermination || 'Not answered'}</td>
-              </tr>
-            </table>
-
-            <h3 style="color: #22c55e; border-bottom: 2px solid #22c55e; padding-bottom: 10px;">
-              Experience & Skills
-            </h3>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="margin: 0; color: #4b5563; white-space: pre-wrap; line-height: 1.6;">${sanitizedData.experience || 'Not provided'}</p>
+        <div style="margin:0;padding:24px;background:#eef2f7;font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;">
+          <div style="max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #dbe3ef;border-radius:18px;overflow:hidden;">
+            <div style="padding:24px 26px;background:linear-gradient(135deg,#0f766e,#0284c7);color:#ffffff;">
+              <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.92;">AOAS Recruitment Desk</p>
+              <h2 style="margin:10px 0 0 0;font-size:27px;line-height:1.25;">New Career Application</h2>
+              <p style="margin:10px 0 0 0;font-size:14px;opacity:0.95;">From: ${sanitizedData.fullName}</p>
             </div>
 
-            <h3 style="color: #22c55e; border-bottom: 2px solid #22c55e; padding-bottom: 10px;">
-              Relevant Skills
-            </h3>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="margin: 0; color: #4b5563; white-space: pre-wrap; line-height: 1.6;">${sanitizedData.relevantSkills || 'Not provided'}</p>
-            </div>
+            <div style="padding:22px 24px;">
+              <div style="margin-bottom:16px;padding:12px 14px;border:1px solid #dbe7f2;border-radius:12px;background:#f8fafc;">
+                <p style="margin:0;color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Reply-To (Applicant)</p>
+                <p style="margin:6px 0 0 0;font-size:15px;font-weight:700;">
+                  <a href="mailto:${sanitizedData.email}" style="color:#0284c7;text-decoration:none;">${sanitizedData.email}</a>
+                </p>
+              </div>
 
-            <h3 style="color: #22c55e; border-bottom: 2px solid #22c55e; padding-bottom: 10px;">
-              Why Hire This Candidate?
-            </h3>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="margin: 0; color: #4b5563; white-space: pre-wrap; line-height: 1.6;">${sanitizedData.whyHireYou || 'Not provided'}</p>
-            </div>
+              <table role="presentation" style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #dbe7f2;border-radius:12px;overflow:hidden;">
+                <tbody>
+                  <tr>
+                    <td style="width:34%;padding:10px 12px;border-bottom:1px solid #dbe7f2;background:#f8fafc;color:#334155;font-size:13px;font-weight:700;">Full Name</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;color:#0f172a;font-size:14px;">${sanitizedData.fullName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;background:#f8fafc;color:#334155;font-size:13px;font-weight:700;">Email</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;color:#0f172a;font-size:14px;">
+                      <a href="mailto:${sanitizedData.email}" style="color:#0284c7;text-decoration:none;">${sanitizedData.email}</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:#f8fafc;color:#334155;font-size:13px;font-weight:700;">Phone Number</td>
+                    <td style="padding:10px 12px;color:#0f172a;font-size:14px;">${sanitizedData.phone}</td>
+                  </tr>
+                </tbody>
+              </table>
 
-            <h3 style="color: #22c55e; border-bottom: 2px solid #22c55e; padding-bottom: 10px;">
-              Attachments
-            </h3>
-            <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="margin: 0; color: #1a1a1a; font-weight: bold;">Resume Attached:</p>
-              <p style="margin: 5px 0 0 0; color: #4b5563;">${sanitizedData.resumeFileName || 'resume'}</p>
-              ${sanitizedData.coverLetterFileName ? `
-              <p style="margin: 15px 0 0 0; color: #1a1a1a; font-weight: bold;">Cover Letter Attached:</p>
-              <p style="margin: 5px 0 0 0; color: #4b5563;">${sanitizedData.coverLetterFileName}</p>
-              ` : ''}
-            </div>
+              <h3 style="margin:20px 0 10px 0;font-size:15px;color:#0f766e;letter-spacing:0.02em;text-transform:uppercase;">Work Preferences</h3>
+              <table role="presentation" style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #dbe7f2;border-radius:12px;overflow:hidden;">
+                <tbody>
+                  <tr>
+                    <td style="width:34%;padding:10px 12px;border-bottom:1px solid #dbe7f2;background:#f8fafc;color:#334155;font-size:13px;font-weight:700;">Preferred Working Hours</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;color:#0f172a;font-size:14px;">${sanitizedData.workingHours || 'Not specified'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;background:#f8fafc;color:#334155;font-size:13px;font-weight:700;">Availability</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;color:#0f172a;font-size:14px;">${sanitizedData.availability || 'Not specified'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;background:#f8fafc;color:#334155;font-size:13px;font-weight:700;">Years of Experience</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #dbe7f2;color:#0f172a;font-size:14px;">${sanitizedData.yearsExperience || 'Not specified'}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 12px;background:#f8fafc;color:#334155;font-size:13px;font-weight:700;">Expected Compensation</td>
+                    <td style="padding:10px 12px;color:#0f172a;font-size:14px;">${sanitizedData.compensation || 'Not specified'}</td>
+                  </tr>
+                </tbody>
+              </table>
 
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="color: #6b7280; font-size: 14px; margin: 0;">
-                This application was submitted through the AOAS Careers page.
-              </p>
-              <p style="color: #6b7280; font-size: 12px; margin: 10px 0 0 0;">
-                Received on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })} (PH Time)
-              </p>
+              <h3 style="margin:20px 0 10px 0;font-size:15px;color:#0f766e;letter-spacing:0.02em;text-transform:uppercase;">Screening Summary</h3>
+              <table role="presentation" style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #dbe7f2;border-radius:12px;overflow:hidden;">
+                <tbody>
+                  ${screeningRows}
+                </tbody>
+              </table>
+
+              <h3 style="margin:20px 0 8px 0;font-size:15px;color:#0f766e;letter-spacing:0.02em;text-transform:uppercase;">Experience and Skills</h3>
+              <div style="white-space:pre-wrap;padding:12px 14px;background:#f8fafc;border:1px solid #dbe7f2;border-radius:12px;color:#0f172a;line-height:1.56;">${sanitizedData.experience || 'Not provided'}</div>
+
+              <h3 style="margin:16px 0 8px 0;font-size:15px;color:#0f766e;letter-spacing:0.02em;text-transform:uppercase;">Relevant Skills</h3>
+              <div style="white-space:pre-wrap;padding:12px 14px;background:#f8fafc;border:1px solid #dbe7f2;border-radius:12px;color:#0f172a;line-height:1.56;">${sanitizedData.relevantSkills || 'Not provided'}</div>
+
+              <h3 style="margin:16px 0 8px 0;font-size:15px;color:#0f766e;letter-spacing:0.02em;text-transform:uppercase;">Why Hire This Candidate</h3>
+              <div style="white-space:pre-wrap;padding:12px 14px;background:#f8fafc;border:1px solid #dbe7f2;border-radius:12px;color:#0f172a;line-height:1.56;">${sanitizedData.whyHireYou || 'Not provided'}</div>
+
+              <h3 style="margin:16px 0 8px 0;font-size:15px;color:#0f766e;letter-spacing:0.02em;text-transform:uppercase;">Attachments</h3>
+              <div style="padding:12px 14px;background:#ecfdf5;border:1px solid #b7e4cc;border-radius:12px;">
+                <p style="margin:0 0 6px 0;color:#14532d;font-size:13px;font-weight:700;">Resume</p>
+                <p style="margin:0;color:#334155;font-size:14px;">${sanitizedData.resumeFileName || 'resume'}</p>
+                ${sanitizedData.coverLetterFileName ? `
+                  <p style="margin:10px 0 6px 0;color:#14532d;font-size:13px;font-weight:700;">Cover Letter</p>
+                  <p style="margin:0;color:#334155;font-size:14px;">${sanitizedData.coverLetterFileName}</p>
+                ` : ''}
+              </div>
+
+              <div style="margin-top:18px;padding-top:14px;border-top:1px solid #dbe7f2;">
+                <p style="margin:0;color:#64748b;font-size:12px;">Submitted via AOAS Careers page</p>
+                <p style="margin:6px 0 0 0;color:#64748b;font-size:12px;">Received on ${nowPh} (PH Time)</p>
+              </div>
             </div>
           </div>
         </div>
@@ -290,9 +320,14 @@ WHY HIRE THIS CANDIDATE?
 ------------------------
 ${whyHireYou || 'Not provided'}
 
+ATTACHMENTS
+-----------
+Resume: ${resumeFileName || 'resume'}
+${coverLetterFileName ? `Cover Letter: ${coverLetterFileName}` : 'Cover Letter: Not provided'}
+
 ---
 This application was submitted through the AOAS Careers page.
-Received on ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' })} (PH Time)
+Received on ${nowPh} (PH Time)
       `,
     };
 

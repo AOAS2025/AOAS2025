@@ -84,10 +84,55 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  overflow: hidden;
+}
+
+.bg-grid::before,
+.bg-grid::after {
+  content: "";
+  position: absolute;
+  inset: -48px;
   background-image:
     linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 36px 36px;
+  will-change: transform;
+}
+
+.bg-grid::before {
+  opacity: 1;
+  animation: bg-grid-drift 160s linear infinite;
+}
+
+.bg-grid::after {
+  opacity: 0.38;
+  animation: bg-grid-drift-alt 220s linear infinite;
+}
+
+@keyframes bg-grid-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-36px, -36px, 0);
+  }
+}
+
+@keyframes bg-grid-drift-alt {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(24px, -24px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-grid::before,
+  .bg-grid::after {
+    animation: none;
+    transform: none;
+  }
 }
 
 .eyebrow {
@@ -767,6 +812,38 @@ textarea:focus {
   overflow: auto;
 }
 
+.table-pagination {
+  border-top: 1px solid var(--line);
+  padding: 0.68rem 0.88rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.56rem;
+}
+
+.table-pagination-meta {
+  margin: 0;
+  min-width: 180px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.table-pagination-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.table-pagination-size select {
+  min-width: 72px;
+}
+
 .data-table {
   width: 100%;
   min-width: 920px;
@@ -967,6 +1044,11 @@ body.is-viewer #view-sections .data-table td:last-child {
   border: 1px solid var(--line);
   background: var(--surface-subtle);
   flex-shrink: 0;
+  transition: opacity 220ms ease;
+}
+
+.participant-avatar-lazy {
+  opacity: 0.62;
 }
 
 .participant-avatar-fallback {
@@ -1111,6 +1193,70 @@ body.is-viewer #view-sections .data-table td:last-child {
   background: var(--card);
   border: 1px solid var(--line);
   box-shadow: none;
+}
+
+.notice-modal-panel {
+  width: min(470px, calc(100% - 1rem));
+  max-height: min(320px, calc(100dvh - 1rem));
+}
+
+.notice-modal-head {
+  border-bottom: 1px solid var(--line);
+}
+
+.notice-modal-body {
+  padding: 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.notice-modal-message {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+#systemNoticeModal[data-kind="success"] .notice-modal-head {
+  background: color-mix(in srgb, var(--brand-soft) 65%, var(--card));
+}
+
+#systemNoticeModal[data-kind="error"] .notice-modal-head {
+  background: color-mix(in srgb, rgba(220, 38, 38, 0.14) 68%, var(--card));
+}
+
+.action-modal-panel {
+  width: min(560px, calc(100% - 1rem));
+  max-height: min(420px, calc(100dvh - 1rem));
+}
+
+.action-modal-head {
+  border-bottom: 1px solid var(--line);
+}
+
+.action-modal-body {
+  padding: 1rem;
+  display: grid;
+  gap: 0.72rem;
+}
+
+.action-modal-message {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.action-modal-field {
+  gap: 0.36rem;
+}
+
+.action-modal-actions {
+  margin-top: 0.1rem;
+}
+
+.action-modal-field input[type="password"] {
+  letter-spacing: 0.04em;
 }
 
 .participant-profile-hero {

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/admin.css?v=20260226d">
+  <link rel="stylesheet" href="/assets/css/admin.css?v=20260304e">
 </head>
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
@@ -19,7 +19,7 @@
     <div class="login-layout">
       <aside class="login-showcase">
         <div class="showcase-brand">
-          <img class="brand-avatar brand-avatar-logo" src="/assets/images/brand/aoas-logo.png" alt="AOAS logo" width="44" height="44">
+          <img class="brand-avatar brand-avatar-logo" src="/assets/images/brand/aoas-logo.png" alt="AOAS logo" width="44" height="44" loading="eager" decoding="async">
           <p class="eyebrow">AOAS Talent CRM</p>
         </div>
         <h1>Manage your talent pipeline <span>beautifully.</span></h1>
@@ -61,7 +61,7 @@
     <aside id="appSidebar" class="sidebar">
       <div class="sidebar-head">
         <div class="brand">
-          <img class="brand-avatar brand-avatar-logo" src="/assets/images/brand/aoas-logo.png" alt="AOAS logo" width="44" height="44">
+          <img class="brand-avatar brand-avatar-logo" src="/assets/images/brand/aoas-logo.png" alt="AOAS logo" width="44" height="44" loading="eager" decoding="async">
           <div class="brand-copy">
             <h2>AOAS</h2>
             <p>TALENT CRM</p>
@@ -223,6 +223,20 @@
                 <tbody id="participantsTableBody"></tbody>
               </table>
             </div>
+            <div id="participantsPagination" class="table-pagination" hidden>
+              <button id="participantsPrevPage" type="button" class="btn btn-light">Previous</button>
+              <p id="participantsPageMeta" class="table-pagination-meta"></p>
+              <label class="table-pagination-size">
+                Rows
+                <select id="participantsPageSize">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="40">40</option>
+                  <option value="80">80</option>
+                </select>
+              </label>
+              <button id="participantsNextPage" type="button" class="btn btn-light">Next</button>
+            </div>
           </article>
         </section>
 
@@ -324,6 +338,19 @@
                 <tbody id="clientPoolTableBody"></tbody>
               </table>
             </div>
+            <div id="clientPoolPagination" class="table-pagination" hidden>
+              <button id="clientPoolPrevPage" type="button" class="btn btn-light">Previous</button>
+              <p id="clientPoolPageMeta" class="table-pagination-meta"></p>
+              <label class="table-pagination-size">
+                Rows
+                <select id="clientPoolPageSize">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="40">40</option>
+                </select>
+              </label>
+              <button id="clientPoolNextPage" type="button" class="btn btn-light">Next</button>
+            </div>
           </article>
 
           <article class="card">
@@ -341,7 +368,7 @@
               </label>
               <label>
                 Company
-                <input id="clientRequestCompany" type="text" maxlength="160" autocomplete="organization" placeholder="Company name">
+                <input id="clientRequestCompany" type="text" maxlength="160" autocomplete="off" placeholder="Company name">
               </label>
               <label>
                 Preferred Interview Date & Time
@@ -436,7 +463,7 @@
         </label>
         <label class="field">
           <span class="field-label">Birthdate</span>
-          <input id="birthdate" type="date" autocomplete="bday">
+          <input id="birthdate" type="date" autocomplete="off">
         </label>
         <label class="field">
           <span class="field-label">Status</span>
@@ -477,6 +504,50 @@
     </div>
   </div>
 
-  <script src="/assets/js/admin.js?v=20260226e" defer></script>
+  <section id="systemNoticeModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="systemNoticeTitle">
+    <div id="systemNoticeBackdrop" class="modal-backdrop"></div>
+    <div class="modal-panel notice-modal-panel">
+      <header class="modal-head notice-modal-head">
+        <div class="modal-head-copy">
+          <h4 id="systemNoticeTitle">Notice</h4>
+          <p class="modal-subtitle">System update</p>
+        </div>
+        <button id="systemNoticeClose" class="btn btn-light modal-close-btn" type="button">Close</button>
+      </header>
+      <div class="notice-modal-body">
+        <p id="systemNoticeMessage" class="notice-modal-message"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="systemActionModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="systemActionTitle">
+    <div id="systemActionBackdrop" class="modal-backdrop"></div>
+    <div class="modal-panel action-modal-panel">
+      <header class="modal-head action-modal-head">
+        <div class="modal-head-copy">
+          <h4 id="systemActionTitle">Action Required</h4>
+          <p id="systemActionSubtitle" class="modal-subtitle">Confirm this action</p>
+        </div>
+        <button id="systemActionClose" class="btn btn-light modal-close-btn" type="button">Close</button>
+      </header>
+      <form id="systemActionForm" class="action-modal-body">
+        <p id="systemActionMessage" class="action-modal-message"></p>
+        <label id="systemActionPrimaryField" class="field action-modal-field" hidden>
+          <span id="systemActionPrimaryLabel" class="field-label">Value</span>
+          <input id="systemActionPrimaryInput" type="text" maxlength="240">
+        </label>
+        <label id="systemActionSecondaryField" class="field action-modal-field" hidden>
+          <span id="systemActionSecondaryLabel" class="field-label">Value</span>
+          <input id="systemActionSecondaryInput" type="text" maxlength="240">
+        </label>
+        <footer class="modal-actions action-modal-actions">
+          <button id="systemActionCancel" type="button" class="btn btn-light">Cancel</button>
+          <button id="systemActionConfirm" type="submit" class="btn btn-primary">Confirm</button>
+        </footer>
+      </form>
+    </div>
+  </section>
+
+  <script src="/assets/js/admin.js?v=20260304j" defer></script>
 </body>
 </html>

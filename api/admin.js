@@ -72,6 +72,16 @@ function getEntityId(req, payload) {
   return String(payload?.id || query.id || '').trim();
 }
 
+function parsePaginationValue(value, fallback, min = 1, max = 100) {
+  const parsed = Number.parseInt(String(value || ''), 10);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  if (parsed < min) return min;
+  if (parsed > max) return max;
+  return parsed;
+}
+
 function toPublicUser(user) {
   return {
     username: user.username,
@@ -285,42 +295,34 @@ async function handleParticipants(req, res) {
     assertAuthenticated(user);
 
     if (req.method === 'GET') {
-      const search = String(query.search || '').trim().toLowerCase();
-      const sectionFilter = String(query.section || '').trim().toLowerCase();
-      const statusFilter = String(query.status || '').trim().toLowerCase();
-      let participants = await listParticipants();
+      const search = String(query.search || '').trim();
+      const sectionFilter = String(query.section || '').trim();
+      const statusFilter = String(query.status || '').trim();
+      const statusSet = String(query.statusSet || '').trim();
+      const page = parsePaginationValue(query.page, 1, 1, 1000000);
+      const pageSize = parsePaginationValue(query.pageSize, 20, 5, 100);
 
-      if (sectionFilter) {
-        participants = participants.filter(
-          (participant) => Array.isArray(participant.sections) && participant.sections.includes(sectionFilter),
-        );
-      }
+      const payload = await listParticipants({
+        search,
+        section: sectionFilter,
+        status: statusFilter,
+        statusSet,
+        page,
+        pageSize,
+      });
 
-      if (statusFilter) {
-        participants = participants.filter((participant) => String(participant.status || '').toLowerCase() === statusFilter);
-      }
-
-      if (search) {
-        participants = participants.filter((participant) => {
-          const blob = [
-            participant.fullName,
-            participant.email,
-            participant.contactNumber,
-            participant.address,
-            participant.gender,
-            participant.notes,
-            ...(Array.isArray(participant.skills) ? participant.skills : []),
-            ...(Array.isArray(participant.sections) ? participant.sections : []),
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
-
-          return blob.includes(search);
-        });
-      }
-
-      res.status(200).json({ success: true, participants });
+      res.status(200).json({
+        success: true,
+        participants: payload.participants || [],
+        pagination: payload.pagination || {
+          page,
+          pageSize,
+          total: 0,
+          totalPages: 1,
+          hasPrev: false,
+          hasNext: false,
+        },
+      });
       return;
     }
 
@@ -595,4 +597,3 @@ module.exports = async (req, res) => {
     error: 'Admin route not found.',
   });
 };
-

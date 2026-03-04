@@ -28,6 +28,218 @@ const isLowEndDevice = (() => {
     return isLowEnd;
 })();
 
+function rafThrottle(callback) {
+    let ticking = false;
+    return (...args) => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+            ticking = false;
+            callback(...args);
+        });
+    };
+}
+
+function shouldKeepImageEager(image) {
+    if (!image || typeof image.closest !== 'function') {
+        return false;
+    }
+
+    const criticalContainer = image.closest(
+        '.hero, .hero-minimal, .header, .navbar, .brand, .logo, .landing-hero, .contact-banner'
+    );
+    if (criticalContainer) {
+        return true;
+    }
+
+    const explicitPriority = image.getAttribute('fetchpriority');
+    if (explicitPriority && explicitPriority.toLowerCase() === 'high') {
+        return true;
+    }
+
+    return false;
+}
+
+function setupLocalFormDraft(form, options = {}) {
+    if (!form || typeof window === 'undefined') {
+        return null;
+    }
+
+    const storagePrefix = options.storagePrefix || 'aoas_form_draft_v1';
+    const defaultId = form.id || form.getAttribute('name') || form.getAttribute('data-service') || 'form';
+    const scope = options.scope || window.location.pathname || 'page';
+    const storageKey = options.storageKey || `${storagePrefix}:${scope}:${defaultId}`;
+    const includeHidden = Boolean(options.includeHidden);
+    const includeFields = Array.isArray(options.includeFields) ? new Set(options.includeFields) : null;
+    const excludeFields = new Set(options.excludeFields || []);
+    const debounceMs = Number.isFinite(options.debounceMs) ? options.debounceMs : 240;
+
+    const getFields = () => Array.from(form.querySelectorAll('input, select, textarea'));
+    const getFieldKey = (field) => field?.name || field?.id || '';
+
+    const shouldPersistField = (field) => {
+        if (!field || field.disabled) return false;
+        if (field.closest('.honeypot-field')) return false;
+        const key = getFieldKey(field);
+        if (!key) return false;
+        if (includeFields && !includeFields.has(key)) return false;
+        if (excludeFields.has(key)) return false;
+        if (field.type === 'password' || field.type === 'file') return false;
+        if (field.type === 'hidden' && !includeHidden) return false;
+        return true;
+    };
+
+    const collect = () => {
+        const values = {};
+        const handledRadioKeys = new Set();
+
+        getFields().forEach((field) => {
+            if (!shouldPersistField(field)) return;
+            const key = getFieldKey(field);
+
+            if (field.type === 'radio') {
+                if (handledRadioKeys.has(key)) return;
+                handledRadioKeys.add(key);
+                const selected = getFields().find(
+                    (candidate) => candidate.type === 'radio' && getFieldKey(candidate) === key && candidate.checked
+                );
+                values[key] = selected ? selected.value : '';
+                return;
+            }
+
+            if (field.type === 'checkbox') {
+                values[key] = Boolean(field.checked);
+                return;
+            }
+
+            values[key] = field.value;
+        });
+
+        return values;
+    };
+
+    const save = () => {
+        try {
+            const payload = {
+                v: 1,
+                ts: Date.now(),
+                values: collect(),
+            };
+            window.localStorage.setItem(storageKey, JSON.stringify(payload));
+        } catch {
+            // Ignore storage quota and privacy mode failures.
+        }
+    };
+
+    const restore = () => {
+        try {
+            const raw = window.localStorage.getItem(storageKey);
+            if (!raw) return false;
+            const parsed = JSON.parse(raw);
+            const values = parsed && typeof parsed === 'object' ? parsed.values : null;
+            if (!values || typeof values !== 'object') return false;
+
+            const fields = getFields();
+            const handledRadioKeys = new Set();
+            let restoredAny = false;
+
+            fields.forEach((field) => {
+                if (!shouldPersistField(field)) return;
+                const key = getFieldKey(field);
+                if (!(key in values)) return;
+
+                if (field.type === 'radio') {
+                    if (handledRadioKeys.has(key)) return;
+                    handledRadioKeys.add(key);
+                    const storedValue = String(values[key] ?? '');
+                    fields.forEach((candidate) => {
+                        if (candidate.type === 'radio' && getFieldKey(candidate) === key) {
+                            candidate.checked = candidate.value === storedValue;
+                        }
+                    });
+                    restoredAny = true;
+                    return;
+                }
+
+                if (field.type === 'checkbox') {
+                    field.checked = Boolean(values[key]);
+                    restoredAny = true;
+                    return;
+                }
+
+                field.value = values[key] == null ? '' : String(values[key]);
+                restoredAny = true;
+            });
+
+            if (restoredAny && typeof options.onRestore === 'function') {
+                options.onRestore(values);
+            }
+            return restoredAny;
+        } catch {
+            return false;
+        }
+    };
+
+    const clear = () => {
+        try {
+            window.localStorage.removeItem(storageKey);
+        } catch {
+            // Ignore storage failures.
+        }
+    };
+
+    let saveTimer = 0;
+    const scheduleSave = () => {
+        if (saveTimer) {
+            window.clearTimeout(saveTimer);
+        }
+        saveTimer = window.setTimeout(save, debounceMs);
+    };
+
+    form.addEventListener('input', scheduleSave);
+    form.addEventListener('change', scheduleSave);
+    form.addEventListener('reset', () => {
+        window.setTimeout(clear, 0);
+    });
+
+    restore();
+
+    return {
+        key: storageKey,
+        save,
+        scheduleSave,
+        clear,
+        restore,
+    };
+}
+
+function getApiUrl(path) {
+    if (window.AOASTracker && typeof window.AOASTracker.resolveApiUrl === 'function') {
+        return window.AOASTracker.resolveApiUrl(path);
+    }
+    return path;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const images = document.querySelectorAll('img');
+    images.forEach((image) => {
+        if (!image.hasAttribute('decoding')) {
+            image.setAttribute('decoding', 'async');
+        }
+
+        if (image.hasAttribute('loading')) {
+            return;
+        }
+
+        image.setAttribute('loading', shouldKeepImageEager(image) ? 'eager' : 'lazy');
+    });
+
+    const iframes = document.querySelectorAll('iframe:not([loading])');
+    iframes.forEach((iframe) => {
+        iframe.setAttribute('loading', 'lazy');
+    });
+});
+
 // Hero Slideshow Functionality
 document.addEventListener('DOMContentLoaded', function () {
     const slides = document.querySelectorAll('.hero-slide');
@@ -490,6 +702,7 @@ document.addEventListener('DOMContentLoaded', function () {
             this.title.textContent = title;
             this.message.textContent = message;
             this.modal.className = `custom-modal ${type} active`;
+            this.modal.style.display = 'flex';
 
             // Focus management
             this.button.focus();
@@ -497,6 +710,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         hide: function () {
             this.modal.classList.remove('active');
+            this.modal.style.display = 'none';
         },
 
         init: function () {
@@ -531,22 +745,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Form validation and submission
     const contactForm = document.getElementById('contactForm');
-    const hcaptchaSiteKey = document.querySelector('meta[name="aoas-hcaptcha-sitekey"]')?.content?.trim() || '';
-    const captchaContainer = document.getElementById('contactCaptchaContainer');
-    const captchaTarget = document.getElementById('contactCaptcha');
-    let captchaWidgetId = null;
-
     const trackEvent = (eventName, properties = {}) => {
         if (window.AOASTracker && typeof window.AOASTracker.track === 'function') {
             window.AOASTracker.track(eventName, properties);
         }
-    };
-
-    const getApiUrl = (path) => {
-        if (window.AOASTracker && typeof window.AOASTracker.resolveApiUrl === 'function') {
-            return window.AOASTracker.resolveApiUrl(path);
-        }
-        return path;
     };
 
     const getUtmPayload = () => {
@@ -595,70 +797,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    const ensureHcaptchaScript = () => {
-        if (window.hcaptcha) {
-            return Promise.resolve();
-        }
-
-        if (window.__aoasHcaptchaPromise) {
-            return window.__aoasHcaptchaPromise;
-        }
-
-        window.__aoasHcaptchaPromise = new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
-            script.async = true;
-            script.defer = true;
-            script.dataset.aoasHcaptcha = 'true';
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error('Failed to load hCaptcha script'));
-            document.head.appendChild(script);
-        });
-
-        return window.__aoasHcaptchaPromise;
-    };
-
-    const initializeCaptcha = async () => {
-        if (!captchaContainer || !captchaTarget || !hcaptchaSiteKey) {
-            return;
-        }
-
-        captchaContainer.hidden = false;
-
-        try {
-            await ensureHcaptchaScript();
-        } catch (error) {
-            console.warn('Captcha script failed to load.', error);
-            return;
-        }
-
-        const renderWidget = () => {
-            if (!window.hcaptcha || captchaWidgetId !== null) {
-                return;
-            }
-
-            captchaWidgetId = window.hcaptcha.render('contactCaptcha', {
-                sitekey: hcaptchaSiteKey,
-            });
-        };
-
-        renderWidget();
-
-        const poll = setInterval(() => {
-            if (window.hcaptcha) {
-                renderWidget();
-                clearInterval(poll);
-            }
-        }, 250);
-    };
-
     if (contactForm) {
         const sourcePageField = document.getElementById('sourcePage');
         const pageUrlField = document.getElementById('pageUrl');
         const serviceField = document.getElementById('service');
+        const inquiryTypeField = document.getElementById('inquiryType');
         const locationField = document.getElementById('location');
         const locationOtherWrap = document.getElementById('contactOtherLocationWrap');
         const locationOtherField = document.getElementById('locationOther');
+        let contactDraft = null;
 
         const toggleContactLocationOther = () => {
             if (!locationField || !locationOtherWrap || !locationOtherField) {
@@ -667,7 +814,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const isOther = locationField.value === 'Other';
             locationOtherWrap.hidden = !isOther;
-            locationOtherField.required = isOther;
             if (!isOther) {
                 locationOtherField.value = '';
             }
@@ -683,8 +829,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
         applyUtmHiddenFields();
         applyServicePrefill();
-        initializeCaptcha();
         toggleContactLocationOther();
+
+        contactDraft = setupLocalFormDraft(contactForm, {
+            scope: 'contact',
+            excludeFields: [
+                'website',
+                'sourcePage',
+                'pageUrl',
+                'utmSource',
+                'utmMedium',
+                'utmCampaign',
+                'utmTerm',
+                'utmContent',
+            ],
+            onRestore: () => {
+                toggleContactLocationOther();
+            },
+        });
 
         serviceField?.addEventListener('change', () => {
             if (serviceField.value) {
@@ -700,12 +862,13 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
 
             const service = document.getElementById('service').value.trim();
+            const inquiryType = inquiryTypeField?.value.trim() || '';
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
             const phone = document.getElementById('phone')?.value.trim() || '';
-            const baseLocation = document.getElementById('location')?.value.trim() || 'Australia';
+            const baseLocation = document.getElementById('location')?.value.trim() || '';
             const manualLocation = document.getElementById('locationOther')?.value.trim() || '';
-            const location = baseLocation === 'Other' ? (manualLocation || 'Other') : baseLocation;
+            const location = baseLocation === 'Other' ? manualLocation : baseLocation;
             const message = document.getElementById('message').value.trim();
             const honeypot = document.getElementById('website')?.value.trim() || '';
             const sourcePage = document.getElementById('sourcePage')?.value || window.location.pathname;
@@ -713,8 +876,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const utm = getUtmPayload();
 
             // Basic validation
-            if (!service || !name || !email || !message) {
-                customModal.show('Required Fields', 'Please complete service, name, email, and message.', 'error');
+            if (!service || !inquiryType || !name || !email || !message) {
+                customModal.show('Required Fields', 'Please complete service, reason for contact, name, email, and message.', 'error');
                 return;
             }
 
@@ -730,26 +893,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            let captchaToken = '';
-            if (hcaptchaSiteKey) {
-                if (!window.hcaptcha || captchaWidgetId === null) {
-                    customModal.show('Captcha Loading', 'Captcha is still loading. Please try again in a moment.', 'error');
-                    return;
-                }
-
-                captchaToken = window.hcaptcha.getResponse(captchaWidgetId);
-                if (!captchaToken) {
-                    customModal.show('Captcha Required', 'Please complete the captcha before submitting.', 'error');
-                    return;
-                }
-            }
-
             // Disable submit button and show loading state
             const submitButton = contactForm.querySelector('button[type="submit"]');
             const originalButtonText = submitButton.textContent;
             submitButton.disabled = true;
             submitButton.textContent = 'SUBMITTING...';
-            trackEvent('contact_form_submit_attempt', { service, source: 'contact-form' });
+            trackEvent('contact_form_submit_attempt', { service, inquiryType, source: 'contact-form' });
 
             try {
                 const response = await fetch(getApiUrl('/api/contact'), {
@@ -760,6 +909,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify({
                         source: 'contact-form',
                         service,
+                        inquiryType,
                         name,
                         email,
                         phone,
@@ -769,7 +919,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         pageUrl,
                         utm,
                         website: honeypot,
-                        captchaToken,
                     })
                 });
 
@@ -787,6 +936,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 trackEvent('contact_form_submitted', {
                     service,
+                    inquiryType,
                     source: 'contact-form',
                 });
 
@@ -795,6 +945,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     data.message || 'Thank you for your inquiry. Our team will get back to you soon.',
                     'success'
                 );
+                contactDraft?.clear();
                 contactForm.reset();
                 if (sourcePageField) {
                     sourcePageField.value = window.location.pathname;
@@ -804,14 +955,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 applyUtmHiddenFields();
                 applyServicePrefill();
-
-                if (window.hcaptcha && captchaWidgetId !== null) {
-                    window.hcaptcha.reset(captchaWidgetId);
-                }
             } catch (error) {
                 console.error('Error submitting inquiry form:', error);
                 trackEvent('contact_form_submit_failed', {
                     service,
+                    inquiryType,
                     error: error.message.slice(0, 140),
                 });
 
@@ -840,20 +988,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Add scroll animation to header
-    let lastScroll = 0;
     const header = document.querySelector('.header');
+    if (header) {
+        const handleHeaderScroll = rafThrottle(() => {
+            const currentScroll = window.pageYOffset;
 
-    window.addEventListener('scroll', () => {
-        const currentScroll = window.pageYOffset;
+            if (currentScroll > 100) {
+                header.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+            } else {
+                header.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.05)';
+            }
+        });
 
-        if (currentScroll > 100) {
-            header.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
-        } else {
-            header.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.05)';
-        }
-
-        lastScroll = currentScroll;
-    });
+        window.addEventListener('scroll', handleHeaderScroll, { passive: true });
+        handleHeaderScroll();
+    }
 
     // Enhanced Intersection Observer for WordPress-like micro animations
     const observerOptions = {
@@ -1161,13 +1310,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Parallax effect for hero section (disabled on mobile for performance)
     if (window.innerWidth > 768) {
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const heroSlideshow = document.querySelector('.hero-slideshow');
-            if (heroSlideshow) {
+        const heroSlideshow = document.querySelector('.hero-slideshow');
+        if (heroSlideshow) {
+            const handleParallaxScroll = rafThrottle(() => {
+                const scrolled = window.pageYOffset;
                 heroSlideshow.style.transform = `translateY(${scrolled * 0.5}px)`;
-            }
-        });
+            });
+
+            window.addEventListener('scroll', handleParallaxScroll, { passive: true });
+            handleParallaxScroll();
+        }
     }
 
     // Partners Carousel - continuous infinite auto-scroll
@@ -1248,6 +1400,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const careersForm = document.getElementById('careersForm');
 
     if (!careersForm) return; // Exit if not on careers page
+    const careersDraft = setupLocalFormDraft(careersForm, {
+        scope: 'careers',
+        excludeFields: ['website'],
+    });
 
     // Form submission handler
     careersForm.addEventListener('submit', async function (e) {
@@ -1285,11 +1441,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.title.textContent = title;
                 this.message.textContent = message;
                 this.modal.className = `custom-modal ${type} active`;
+                this.modal.style.display = 'flex';
                 this.button.focus();
             },
 
             hide: function () {
                 this.modal.classList.remove('active');
+                this.modal.style.display = 'none';
             }
         };
 
@@ -1371,6 +1529,13 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Compensation must contain at least 5 digits (example: 15000)
+        const compensationDigits = compensation.replace(/\D/g, '');
+        if (compensationDigits.length < 5) {
+            customModal.show('Invalid Compensation', 'Expected compensation must be at least 5 digits (example: 15000).', 'error');
+            return;
+        }
+
         // Validate new Yes/No questions
         if (!flexibleSchedule) {
             customModal.show('Required Selection', 'Please answer if you are willing to adjust your work hours.', 'error');
@@ -1426,6 +1591,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const originalButtonText = submitButton.textContent;
         submitButton.disabled = true;
         submitButton.textContent = 'UPLOADING...';
+        const notifyWizardSubmitFailed = () => {
+            careersForm.dispatchEvent(new CustomEvent('aoas:careers-submit-failed'));
+        };
 
         try {
             // Convert resume file to base64
@@ -1505,6 +1673,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 );
 
                 // Reset form
+                careersDraft?.clear();
                 careersForm.reset();
 
                 // Clear button selections
@@ -1517,6 +1686,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     data.error || 'Failed to submit application. Please try again later.',
                     'error'
                 );
+                notifyWizardSubmitFailed();
             }
         } catch (error) {
             console.error('Error submitting form:', error);
@@ -1538,6 +1708,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     'error'
                 );
             }
+            notifyWizardSubmitFailed();
         } finally {
             // Re-enable submit button
             submitButton.disabled = false;
