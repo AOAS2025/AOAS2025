@@ -6255,6 +6255,27 @@ body.service-reveal-enabled .service-animate.is-visible {
 
 /* Mobile refinement pass: compact layout + spacing cleanup */
 @media (max-width: 768px) {
+    #services-preview .services-home-viewport {
+        padding: 4px 2px 8px;
+    }
+
+    #services-preview .services-home-slide {
+        justify-content: flex-start;
+        padding: 0 2px;
+    }
+
+    #services-preview .services-home-slide > .service-card-home {
+        width: 100%;
+        max-width: none;
+        flex-basis: 100%;
+    }
+
+    #services-preview .service-card-home.showcase-active,
+    #services-preview .service-card-home:hover,
+    #services-preview .service-card-home:focus-within {
+        transform: translateY(-2px) scale(1);
+    }
+
     .container {
         padding: 0 12px;
     }
