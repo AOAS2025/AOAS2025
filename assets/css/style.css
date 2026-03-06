@@ -4850,6 +4850,7 @@ body.office-lightbox-open {
     align-items: stretch;
     gap: var(--home-services-gap);
     flex: 0 0 100%;
+    overflow: hidden;
 }
 
 .services-home-slide > .service-card-home {
@@ -5478,6 +5479,7 @@ html[data-theme="dark"] .service-card-home-media {
     align-items: stretch;
     gap: var(--services-carousel-gap);
     flex: 0 0 100%;
+    overflow: hidden;
 }
 
 .services-page-slide>.services-page-card {

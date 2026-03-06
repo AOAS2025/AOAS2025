@@ -306,7 +306,6 @@
         let currentPage = 0;
         let autoplayTimer = 0;
         let resizeTimer = 0;
-        let slideWidth = 0;
         const swipeState = {
             active: false,
             startX: 0,
@@ -338,11 +337,13 @@
         };
 
         const getSlideWidth = () => {
-            return slideWidth || viewport?.getBoundingClientRect().width || carousel.clientWidth || window.innerWidth;
+            return viewport?.clientWidth || carousel.clientWidth || window.innerWidth;
         };
 
         const updatePosition = () => {
-            const offset = getSlideWidth() * currentPage;
+            const slides = track.querySelectorAll('.services-page-slide');
+            const activeSlide = slides[currentPage];
+            const offset = activeSlide ? activeSlide.offsetLeft : getSlideWidth() * currentPage;
             track.style.transform = `translate3d(-${offset}px, 0, 0)`;
             updateControls();
         };
@@ -418,16 +419,16 @@
             carousel.dataset.carouselMultiple = totalPages > 1 ? 'true' : 'false';
 
             const fragment = document.createDocumentFragment();
-            slideWidth = Math.round(viewport?.clientWidth || carousel.clientWidth || window.innerWidth);
+            const viewportWidth = Math.round(getSlideWidth());
 
             for (let index = 0; index < cards.length; index += perPage) {
                 const slide = document.createElement('div');
                 slide.className = 'services-page-slide';
                 slide.setAttribute('role', 'group');
                 slide.setAttribute('aria-label', `Services page ${Math.floor(index / perPage) + 1} of ${totalPages}`);
-                slide.style.width = `${slideWidth}px`;
-                slide.style.minWidth = `${slideWidth}px`;
-                slide.style.flex = `0 0 ${slideWidth}px`;
+                slide.style.width = `${viewportWidth}px`;
+                slide.style.minWidth = `${viewportWidth}px`;
+                slide.style.flex = `0 0 ${viewportWidth}px`;
 
                 cards.slice(index, index + perPage).forEach((card) => {
                     slide.appendChild(card);
