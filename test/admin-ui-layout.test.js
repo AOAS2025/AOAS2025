@@ -40,8 +40,8 @@ test('admin shell includes mobile navigation and workflow drawers', () => {
   assert.doesNotMatch(adminHtml, /Account access remains server-side only/);
 });
 
-test('admin script uses light-first theme and removes old accordion page-size hooks', () => {
-  assert.match(adminJs, /applyTheme\('light'\)/);
+test('admin script defaults to dark theme and removes old accordion page-size hooks', () => {
+  assert.match(adminJs, /applyTheme\('dark'\)/);
   assert.match(adminJs, /function getAllowedViewIds\(\)/);
   assert.match(adminJs, /function sanitizeViewId\(viewId\)/);
   assert.match(adminJs, /function trapFocusWithinOverlay\(event\)/);

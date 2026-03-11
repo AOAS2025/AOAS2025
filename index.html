@@ -41,13 +41,34 @@
 
     <title>AOAS | Virtual Assistants Australia & NDIS Admin Support | Attainment Office Administrative Services</title>
     <!-- Performance: Preload critical resources -->
-    <link rel="preload" href="/assets/css/style.css?v=20260306n" as="style">
-    <link rel="preload" href="/assets/js/script.js?v=20260306e" as="script">
+    <link rel="preload" href="/assets/css/style.css?v=20260311e" as="style">
+    <link rel="preload" href="/assets/js/script.js?v=20260311b" as="script">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260306n">
+    <script>
+        window.tailwind = {
+            config: {
+                theme: {
+                    extend: {
+                        colors: {
+                            aoas: {
+                                950: '#0b1220',
+                                900: '#0f172a',
+                                500: '#22c55e'
+                            }
+                        },
+                        boxShadow: {
+                            drawer: '0 32px 80px rgba(2, 6, 23, 0.55)'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260311e">
     <!-- Favicon - Multiple formats for best crawler compatibility -->
     <link rel="icon" type="image/x-icon" href="/assets/icons/favicon.ico">
     <link rel="icon" type="image/ico" href="/assets/icons/favicon.ico">
@@ -270,7 +291,8 @@
                         <span class="logo-text-short">AOAS</span>
                     </span>
                 </a>
-                <button class="hamburger-menu" aria-label="Toggle menu">
+                <button class="hamburger-menu" type="button" aria-label="Open menu" aria-controls="mobileNavDrawer"
+                    aria-expanded="false" aria-haspopup="dialog">
                     <span></span>
                     <span></span>
                     <span></span>
@@ -294,6 +316,127 @@
             </div>
         </div>
     </header>
+
+    <div id="mobileNavDrawer"
+        class="mobile-nav-drawer fixed inset-0 z-[1090] flex justify-end p-2.5 lg:hidden"
+        style="padding-top: calc(var(--mobile-nav-header-offset, 76px) + 8px);" role="dialog" aria-modal="true"
+        aria-hidden="true" aria-labelledby="mobileNavDrawerTitle" data-open="false" hidden>
+        <div class="mobile-nav-backdrop absolute inset-0 bg-slate-950/70"></div>
+        <div
+            class="mobile-nav-drawer-panel relative ml-auto flex h-full w-[min(80vw,320px)] max-w-[320px] flex-col overflow-hidden rounded-[16px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(34,197,94,0.14),_transparent_30%),linear-gradient(180deg,_rgba(11,18,32,0.98)_0%,_rgba(15,23,42,0.97)_56%,_rgba(8,15,30,0.99)_100%)] shadow-drawer ring-1 ring-white/10">
+            <div class="flex items-center justify-between gap-3 px-4 pb-3 pt-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    <span
+                        class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-1 shadow-[0_12px_24px_rgba(2,6,23,0.24)]">
+                        <img src="/assets/images/brand/aoas-logo.png" alt="AOAS logo"
+                            class="h-full w-full rounded-xl bg-white/95 object-contain p-1">
+                    </span>
+                    <div class="min-w-0">
+                        <p id="mobileNavDrawerTitle"
+                            class="truncate text-sm font-semibold uppercase tracking-[0.28em] text-slate-100">AOAS</p>
+                        <p class="mt-1 truncate text-[0.62rem] font-medium uppercase tracking-[0.16em] text-slate-400">
+                            Attainment Office</p>
+                    </div>
+                </div>
+                <button type="button" data-mobile-nav-close aria-label="Close menu"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-100 transition duration-200 ease-out hover:-translate-y-0.5 hover:border-emerald-400/40 hover:bg-emerald-500/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1220]">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 6 18 18"></path>
+                        <path d="m18 6-12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mx-4 h-px bg-white/10"></div>
+            <nav class="flex-1 px-2.5 py-4" aria-label="Mobile menu">
+                <ul class="flex flex-col">
+                    <li class="mobile-nav-item border-b border-white/10 pb-1.5" style="transition-delay: 0ms;">
+                        <a href="https://www.facebook.com/profile.php?id=61578320660587" target="_blank"
+                            rel="noopener noreferrer" data-mobile-nav-link
+                            class="group flex items-center gap-3 rounded-[18px] px-4 py-3.5 text-[0.95rem] font-medium tracking-[0.01em] text-slate-100/94 transition duration-200 ease-out hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1220] active:scale-[0.99]">
+                            <span
+                                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/20 transition duration-200 group-hover:bg-emerald-500/18 group-hover:text-emerald-300">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path
+                                        d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.026 4.388 11.02 10.125 11.927V15.56H7.078v-3.488h3.047V9.414c0-3.007 1.792-4.688 4.533-4.688 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.49 0-1.956.928-1.956 1.88v2.278h3.328l-.532 3.488h-2.796V24C19.612 23.093 24 18.099 24 12.073Z">
+                                    </path>
+                                </svg>
+                            </span>
+                            <span>Facebook</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item border-b border-white/10 py-1.5" style="transition-delay: 50ms;">
+                        <a href="/careers" data-mobile-nav-link
+                            class="group flex items-center gap-3 rounded-[18px] px-4 py-3.5 text-[0.95rem] font-medium tracking-[0.01em] text-slate-100/94 transition duration-200 ease-out hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1220] active:scale-[0.99]">
+                            <span
+                                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/20 transition duration-200 group-hover:bg-emerald-500/18 group-hover:text-emerald-300">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    aria-hidden="true">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="8.5" cy="7" r="4"></circle>
+                                    <path d="M20 8v6"></path>
+                                    <path d="M23 11h-6"></path>
+                                </svg>
+                            </span>
+                            <span>Join Our Team</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item border-b border-white/10 py-1.5" style="transition-delay: 100ms;">
+                        <a href="/services" data-mobile-nav-link
+                            class="group flex items-center gap-3 rounded-[18px] px-4 py-3.5 text-[0.95rem] font-medium tracking-[0.01em] text-slate-100/94 transition duration-200 ease-out hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1220] active:scale-[0.99]">
+                            <span
+                                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/20 transition duration-200 group-hover:bg-emerald-500/18 group-hover:text-emerald-300">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    aria-hidden="true">
+                                    <path d="M3 7h18"></path>
+                                    <path d="M6 12h12"></path>
+                                    <path d="M10 17h4"></path>
+                                </svg>
+                            </span>
+                            <span>Services</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item border-b border-white/10 py-1.5" style="transition-delay: 150ms;">
+                        <a href="#about" data-mobile-nav-link
+                            class="group flex items-center gap-3 rounded-[18px] px-4 py-3.5 text-[0.95rem] font-medium tracking-[0.01em] text-slate-100/94 transition duration-200 ease-out hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1220] active:scale-[0.99]">
+                            <span
+                                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/20 transition duration-200 group-hover:bg-emerald-500/18 group-hover:text-emerald-300">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9"></circle>
+                                    <path d="M12 10v5"></path>
+                                    <path d="M12 7h.01"></path>
+                                </svg>
+                            </span>
+                            <span>About Us</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item pt-1.5" style="transition-delay: 200ms;">
+                        <a href="#contact" data-mobile-nav-link
+                            class="group flex items-center gap-3 rounded-[18px] px-4 py-3.5 text-[0.95rem] font-medium tracking-[0.01em] text-slate-100/94 transition duration-200 ease-out hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1220] active:scale-[0.99]">
+                            <span
+                                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/20 transition duration-200 group-hover:bg-emerald-500/18 group-hover:text-emerald-300">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    aria-hidden="true">
+                                    <path d="M4 6h16v12H4z"></path>
+                                    <path d="m4 7 8 6 8-6"></path>
+                                </svg>
+                            </span>
+                            <span>Contact Us</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="mx-4 h-px bg-white/10"></div>
+            <div class="px-4 pb-5 pt-3 text-[0.62rem] font-medium uppercase tracking-[0.22em] text-slate-400/80">
+                &copy; 2026 AOAS
+            </div>
+        </div>
+    </div>
 
     <!-- Hero Section -->
     <section class="hero" id="home">
@@ -352,6 +495,11 @@
                             data-track-event="cta_click">View Services</a>
                         <a href="#contact" class="pill-btn cta-track" data-track-label="Hero Inquire"
                             data-track-event="cta_click">Request a Quote</a>
+                    </div>
+                </div>
+                <div class="hero-brand-panel" aria-label="AOAS brand">
+                    <div class="hero-brand-logo-wrap">
+                        <img src="/assets/images/brand/aoas-logo.png" alt="AOAS logo" class="hero-brand-logo">
                     </div>
                 </div>
             </div>
@@ -1201,7 +1349,7 @@
 
     <script src="/assets/js/theme-toggle.js?v=20260306a"></script>
     <script src="/assets/js/tracker.js"></script>
-    <script src="/assets/js/script.js?v=20260306e"></script>
+    <script src="/assets/js/script.js?v=20260311b"></script>
     <script src="/assets/js/chatbot.js?v=20260304f"></script>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

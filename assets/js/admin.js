@@ -1759,7 +1759,7 @@
       return;
     }
 
-    applyTheme('light');
+    applyTheme('dark');
   }
 
   function handleThemeToggle() {
