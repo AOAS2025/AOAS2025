@@ -40,6 +40,8 @@ create table if not exists public.crm_accounts (
   is_active boolean not null default true,
   failed_login_attempts integer not null default 0,
   locked_until timestamptz,
+  failed_reset_attempts integer not null default 0,
+  reset_locked_until timestamptz,
   last_login_at timestamptz,
   password_changed_at timestamptz,
   created_at timestamptz not null default now(),
@@ -58,6 +60,8 @@ alter table public.crm_accounts add column if not exists secret_answer_2_hash te
 alter table public.crm_accounts add column if not exists secret_answer_3_hash text not null default '';
 alter table public.crm_accounts add column if not exists failed_login_attempts integer not null default 0;
 alter table public.crm_accounts add column if not exists locked_until timestamptz;
+alter table public.crm_accounts add column if not exists failed_reset_attempts integer not null default 0;
+alter table public.crm_accounts add column if not exists reset_locked_until timestamptz;
 alter table public.crm_accounts add column if not exists last_login_at timestamptz;
 alter table public.crm_accounts add column if not exists password_changed_at timestamptz;
 
@@ -116,7 +120,7 @@ alter table public.crm_client_requests add column if not exists ceo_meeting_link
 create table if not exists public.crm_client_request_events (
   id uuid primary key default gen_random_uuid(),
   request_id uuid not null references public.crm_client_requests(id) on delete cascade,
-  event_type text not null check (event_type in ('submitted', 'approved', 'scheduled', 'declined', 'finalized')),
+  event_type text not null check (event_type in ('submitted', 'approved', 'scheduled', 'declined', 'finalized', 'revoked')),
   status_after text not null check (status_after in ('pending', 'approved', 'scheduled', 'declined', 'finalized')),
   note text not null default '',
   interview_datetime timestamptz,
@@ -140,10 +144,21 @@ create table if not exists public.crm_hired_profiles (
   client_email text not null default '',
   client_company text not null default '',
   hired_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  revoked_at timestamptz,
+  revoked_by text not null default '',
+  revoked_reason text not null default '',
+  revoke_note text not null default '',
   created_by text not null default '',
   notes text not null default '',
   unique (request_id, participant_id)
 );
+
+alter table public.crm_hired_profiles add column if not exists updated_at timestamptz not null default now();
+alter table public.crm_hired_profiles add column if not exists revoked_at timestamptz;
+alter table public.crm_hired_profiles add column if not exists revoked_by text not null default '';
+alter table public.crm_hired_profiles add column if not exists revoked_reason text not null default '';
+alter table public.crm_hired_profiles add column if not exists revoke_note text not null default '';
 
 create table if not exists public.crm_account_password_resets (
   id uuid primary key default gen_random_uuid(),
@@ -171,6 +186,9 @@ create index if not exists idx_crm_client_request_events_request on public.crm_c
 create index if not exists idx_crm_client_request_events_created on public.crm_client_request_events (created_at desc);
 create index if not exists idx_crm_hired_profiles_hired on public.crm_hired_profiles (hired_at desc);
 create index if not exists idx_crm_hired_profiles_request on public.crm_hired_profiles (request_id);
+create index if not exists idx_crm_hired_profiles_participant on public.crm_hired_profiles (participant_id);
+create index if not exists idx_crm_hired_profiles_revoked on public.crm_hired_profiles (revoked_at desc);
+create index if not exists idx_crm_hired_profiles_active on public.crm_hired_profiles (request_id, hired_at desc) where revoked_at is null;
 create index if not exists idx_crm_password_resets_account on public.crm_account_password_resets (account_id);
 create index if not exists idx_crm_password_resets_expires on public.crm_account_password_resets (expires_at);
 
@@ -192,6 +210,11 @@ for each row execute procedure public.touch_updated_at();
 drop trigger if exists trg_crm_client_requests_touch on public.crm_client_requests;
 create trigger trg_crm_client_requests_touch
 before update on public.crm_client_requests
+for each row execute procedure public.touch_updated_at();
+
+drop trigger if exists trg_crm_hired_profiles_touch on public.crm_hired_profiles;
+create trigger trg_crm_hired_profiles_touch
+before update on public.crm_hired_profiles
 for each row execute procedure public.touch_updated_at();
 
 -- Backend uses the service-role key on the server.

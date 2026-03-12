@@ -38,10 +38,11 @@ test('admin shell includes mobile navigation and workflow drawers', () => {
   assert.match(adminHtml, /id="systemActionChecklistField"/);
   assert.doesNotMatch(adminHtml, /id="signupRecoveryEmail"/);
   assert.doesNotMatch(adminHtml, /Account access remains server-side only/);
+  assert.doesNotMatch(adminHtml, /fonts\.googleapis\.com|fonts\.gstatic\.com/);
 });
 
-test('admin script defaults to dark theme and removes old accordion page-size hooks', () => {
-  assert.match(adminJs, /applyTheme\('dark'\)/);
+test('admin script defaults to light theme and removes old accordion page-size hooks', () => {
+  assert.match(adminJs, /applyTheme\('light'\)/);
   assert.match(adminJs, /function getAllowedViewIds\(\)/);
   assert.match(adminJs, /function sanitizeViewId\(viewId\)/);
   assert.match(adminJs, /function trapFocusWithinOverlay\(event\)/);

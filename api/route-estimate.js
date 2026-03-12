@@ -1,4 +1,9 @@
 const { computeRouteEstimate } = require('../lib/route-estimator');
+const {
+  applySecurityHeaders,
+  rejectIfUntrustedOrigin,
+  setCors,
+} = require('../lib/http-security');
 
 function parseBody(body) {
   if (!body) {
@@ -28,11 +33,12 @@ function toRouteProviderLabel(provider) {
 }
 
 module.exports = async (req, res) => {
-  const origin = req.headers.origin;
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applySecurityHeaders(req, res);
+  setCors(req, res, 'OPTIONS,POST');
+
+  if (rejectIfUntrustedOrigin(req, res)) {
+    return;
+  }
 
   if (req.method === 'OPTIONS') {
     res.status(204).end();
@@ -70,9 +76,14 @@ module.exports = async (req, res) => {
     });
   } catch (error) {
     const status = Number.isInteger(error?.status) ? error.status : 502;
+    if (status >= 500) {
+      console.error('Route estimate error:', error?.stack || error?.message || error);
+    }
     res.status(status).json({
       success: false,
-      error: error?.message || 'Failed to compute route estimate.',
+      error: status >= 500
+        ? 'Failed to compute route estimate.'
+        : (error?.message || 'Failed to compute route estimate.'),
     });
   }
 };

@@ -1,14 +1,15 @@
 require('dotenv').config();
 const { Resend } = require('resend');
 const {
-  buildPublicBaseUrl,
-  buildPasswordResetEmailTemplate,
-} = require('../lib/admin-auth-notifications');
-const {
   buildClientRequestEmailTemplate: buildAdminClientRequestEmailTemplate,
   buildClientStatusEmailTemplate,
   getSupportEmail,
 } = require('../lib/admin-crm-email');
+const {
+  applySecurityHeaders,
+  rejectIfUntrustedOrigin,
+  setCors,
+} = require('../lib/http-security');
 const {
   STATUS_OPTIONS,
   resolveUserFromRequest,
@@ -26,7 +27,6 @@ const {
   getSystemAdminPublic,
   listAccounts,
   createSubAccount,
-  createPublicAccount,
   updateSubAccount,
   deleteSubAccount,
   changeOwnPassword,
@@ -36,6 +36,7 @@ const {
   createClientRequest,
   updateClientRequestStatus,
   finalizeClientRequest,
+  revokeHiredProfile,
   markClientRequestEventNotification,
   authenticateUser,
   createTokenForUser,
@@ -43,55 +44,6 @@ const {
 
 const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
-
-function allowedOrigins() {
-  return new Set(
-    String(process.env.CORS_ALLOWED_ORIGINS || '')
-      .split(',')
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean),
-  );
-}
-
-function isAllowedOrigin(req, originRaw) {
-  if (!originRaw) {
-    return true;
-  }
-
-  try {
-    const origin = new URL(originRaw);
-    const host = String(req.headers['x-forwarded-host'] || req.headers.host || '')
-      .split(',')[0]
-      .trim()
-      .toLowerCase();
-
-    return origin.host.toLowerCase() === host || allowedOrigins().has(origin.origin.toLowerCase());
-  } catch {
-    return false;
-  }
-}
-
-function setCors(req, res, methods) {
-  const origin = req.headers.origin;
-  res.setHeader('Vary', 'Origin');
-  if (origin && isAllowedOrigin(req, origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', methods || 'GET,OPTIONS,POST,PUT,DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Token');
-}
-
-function rejectIfUntrustedOrigin(req, res) {
-  const origin = req.headers.origin;
-  if (origin && !isAllowedOrigin(req, origin)) {
-    res.status(403).json({
-      success: false,
-      error: 'Origin not allowed.',
-    });
-    return true;
-  }
-  return false;
-}
 
 function parseBody(body) {
   if (!body) {
@@ -152,45 +104,29 @@ function toPublicUser(user) {
   };
 }
 
-function sendError(res, error) {
+function getSafeErrorMessage(error) {
   const status = Number.isInteger(error?.status) ? error.status : 500;
-  res.status(status).json({
-    success: false,
-    error: error?.message || 'Unexpected admin endpoint error.',
-  });
+  if (typeof error?.publicMessage === 'string' && error.publicMessage.trim()) {
+    return error.publicMessage;
+  }
+  if (status >= 500) {
+    return 'Admin service is temporarily unavailable. Please try again later.';
+  }
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+  return 'Unexpected admin endpoint error.';
 }
 
-async function sendPasswordResetEmail(resetPayload, req) {
-  if (!resetPayload || resetPayload.delivery !== 'email') {
-    return false;
+function sendError(res, error) {
+  const status = Number.isInteger(error?.status) ? error.status : 500;
+  if (status >= 500) {
+    console.error('Admin API error:', error?.stack || error?.message || error);
   }
-
-  if (!resend || !RESEND_API_KEY || !resetPayload.account?.recoveryEmail) {
-    return false;
-  }
-
-  const baseUrl = buildPublicBaseUrl(req);
-  const resetUrl = `${baseUrl}/admin?reset_token=${encodeURIComponent(resetPayload.resetToken || '')}`;
-  const template = buildPasswordResetEmailTemplate({
-    account: resetPayload.account,
-    resetUrl,
-    expiresAt: resetPayload.expiresAt,
+  res.status(status).json({
+    success: false,
+    error: getSafeErrorMessage(error),
   });
-
-  const { error } = await resend.emails.send({
-    from: 'AOAS CRM <support@attainmentofficeadserv.org>',
-    to: [resetPayload.account.recoveryEmail],
-    subject: template.subject,
-    html: template.html,
-    text: template.text,
-  });
-
-  if (error) {
-    console.error('Password reset email failed:', JSON.stringify(error, null, 2));
-    return false;
-  }
-
-  return true;
 }
 
 function normalizePath(req) {
@@ -211,10 +147,20 @@ function normalizePath(req) {
 }
 
 function clientRequestPathParts(pathname) {
+  const revokeMatch = pathname.match(/^client-requests\/([^/]+)\/hired\/([^/]+)\/revoke$/);
+  if (revokeMatch) {
+    return {
+      requestId: decodeURIComponent(revokeMatch[1]),
+      hireId: decodeURIComponent(revokeMatch[2]),
+      action: 'revoke-hire',
+    };
+  }
+
   const match = pathname.match(/^client-requests\/([^/]+)\/(status|finalize)$/);
   if (!match) {
     return null;
   }
+
   return {
     requestId: decodeURIComponent(match[1]),
     action: match[2],
@@ -285,12 +231,9 @@ async function handleSignup(req, res) {
   }
 
   try {
-    const payload = parseBody(req.body);
-    const account = await createPublicAccount(payload);
-    res.status(201).json({
-      success: true,
-      account,
-      message: 'Account created successfully. You can now sign in.',
+    res.status(403).json({
+      success: false,
+      error: 'Public account creation is disabled. Ask an administrator to provision access.',
     });
   } catch (error) {
     sendError(res, error);
@@ -875,8 +818,47 @@ async function handleClientRequestFinalize(req, res, requestId) {
   }
 }
 
+async function handleClientRequestRevoke(req, res, requestId, hireId) {
+  setCors(req, res, 'POST,OPTIONS');
+  if (rejectIfUntrustedOrigin(req, res)) {
+    return;
+  }
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  if (req.method !== 'POST') {
+    res.status(405).json({ success: false, error: 'Method not allowed' });
+    return;
+  }
+
+  const payload = parseBody(req.body);
+
+  try {
+    const user = await resolveUserFromRequest(req);
+    assertAuthenticated(user);
+    assertAdmin(user);
+
+    if (!requestId || !hireId) {
+      res.status(400).json({ success: false, error: 'request id and hire id are required.' });
+      return;
+    }
+
+    const result = await revokeHiredProfile(requestId, hireId, payload, user);
+    res.status(200).json({
+      success: true,
+      request: result.request,
+      hiredProfiles: result.hiredProfiles || [],
+    });
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 module.exports = async (req, res) => {
   require('dotenv').config({ override: true });
+  applySecurityHeaders(req, res);
   const pathname = normalizePath(req);
 
   if (!pathname || pathname === '/') {
@@ -947,6 +929,10 @@ module.exports = async (req, res) => {
   }
   if (clientPath?.action === 'finalize') {
     await handleClientRequestFinalize(req, res, clientPath.requestId);
+    return;
+  }
+  if (clientPath?.action === 'revoke-hire') {
+    await handleClientRequestRevoke(req, res, clientPath.requestId, clientPath.hireId);
     return;
   }
 

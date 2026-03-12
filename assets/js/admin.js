@@ -435,6 +435,42 @@
     return parts.map((part) => part.charAt(0).toUpperCase()).join('');
   }
 
+  function truncateText(value, maxLength = 160) {
+    const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!normalized) return '';
+    if (normalized.length <= maxLength) return normalized;
+    return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
+  }
+
+  function buildMailtoHref(value) {
+    const normalized = String(value || '').trim();
+    if (!normalized || !normalized.includes('@')) return '';
+    return `mailto:${encodeURIComponent(normalized)}`;
+  }
+
+  function renderClientRequestProfileStack(profiles) {
+    const visibleProfiles = Array.isArray(profiles) ? profiles.filter(Boolean).slice(0, 4) : [];
+    if (!visibleProfiles.length) {
+      return '<span class="client-request-summary-hint">No profiles yet</span>';
+    }
+
+    const overflowCount = Math.max((Array.isArray(profiles) ? profiles.length : 0) - visibleProfiles.length, 0);
+    const avatars = visibleProfiles.map((profile) => {
+      const name = String(profile?.fullName || 'Profile').trim() || 'Profile';
+      const imageUrl = String(profile?.profilePicture?.dataUrl || '').trim();
+      if (imageUrl) {
+        return `<img class="client-request-profile-avatar participant-avatar" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" decoding="async">`;
+      }
+      return `<span class="client-request-profile-avatar participant-avatar participant-avatar-fallback" aria-label="${escapeHtml(name)}">${escapeHtml(initialsFromName(name))}</span>`;
+    });
+
+    if (overflowCount > 0) {
+      avatars.push(`<span class="client-request-profile-more" aria-label="${escapeHtml(String(overflowCount))} more profiles">+${escapeHtml(String(overflowCount))}</span>`);
+    }
+
+    return `<div class="client-request-profile-stack" aria-label="${escapeHtml(String((Array.isArray(profiles) ? profiles.length : 0)))} selected profiles">${avatars.join('')}</div>`;
+  }
+
   function isMetaExpanded(kind, participantId) {
     if (!participantId) return false;
     return state.participantMetaExpanded[kind]?.has(participantId);
@@ -1759,7 +1795,7 @@
       return;
     }
 
-    applyTheme('dark');
+    applyTheme('light');
   }
 
   function handleThemeToggle() {
@@ -2329,12 +2365,12 @@
     const hireCount = state.hiredProfiles.length;
 
     if (els.clientRequestsHeroKicker) {
-      els.clientRequestsHeroKicker.textContent = admin ? 'Management intake' : 'Request workflow';
+      els.clientRequestsHeroKicker.textContent = 'Requests';
     }
     if (els.clientRequestsHeroSubtitle) {
       els.clientRequestsHeroSubtitle.textContent = admin
-        ? 'Review submitted requests, update statuses, and finalize hires without leaving the dashboard.'
-        : 'Choose candidate profiles and send one polished request in a single guided flow.';
+        ? 'Review, schedule, and hire in one clean workspace.'
+        : 'Choose talent and send one clear request.';
     }
     if (els.clientSelectedMeta) {
       els.clientSelectedMeta.textContent = admin ? `${requestCount} requests` : `${selectedCount} selected`;
@@ -2476,6 +2512,7 @@
     if (normalized === 'scheduled') return 'Scheduled';
     if (normalized === 'declined') return 'Declined';
     if (normalized === 'finalized') return 'Finalized';
+    if (normalized === 'revoked') return 'Revoked';
     return 'Update';
   }
 
@@ -2503,15 +2540,20 @@
         const selectedCount = selectedProfiles.length;
         const status = String(request.status || 'pending').toLowerCase();
         const statusClass = `request-${status}`;
-        const interviewAt = request.interviewDateTime ? formatDateTime(request.interviewDateTime) : 'Not set';
-        const ceoAt = request.ceoMeetingDateTime ? formatDateTime(request.ceoMeetingDateTime) : 'Not set';
-        const ceoMode = request.ceoIncluded ? 'Included' : 'Not required';
+        const interviewAt = request.interviewDateTime ? formatDateTime(request.interviewDateTime) : 'Pick a time';
+        const ceoAt = request.ceoIncluded
+          ? (request.ceoMeetingDateTime ? formatDateTime(request.ceoMeetingDateTime) : 'Included')
+          : 'Off';
         const admin = isAdmin();
         const latestEvent = Array.isArray(request.events) && request.events.length ? request.events[0] : null;
         const requestNote = String(latestEvent?.note || request.approvalNotes || '').trim();
         const eventHistory = Array.isArray(request.events) ? request.events : [];
         const interviewLink = safeExternalHref(request.interviewMeetingLink);
         const ceoLink = safeExternalHref(request.ceoMeetingLink);
+        const clientCompany = String(request.clientCompany || '').trim();
+        const emailLink = buildMailtoHref(request.clientEmail);
+        const profileStackMarkup = renderClientRequestProfileStack(selectedProfiles);
+        const messagePreview = truncateText(request.requestMessage || 'No message provided.', 180);
         const eventHistoryMarkup = admin && eventHistory.length
           ? `
             <details class="client-request-history">
@@ -2531,31 +2573,34 @@
             `
           : '';
         const summaryItems = [
-          { key: 'profiles', label: 'Profiles', value: String(selectedCount) },
+          { key: 'profiles', label: 'Profiles', value: String(selectedCount), support: profileStackMarkup },
           { key: 'interview', label: 'Interview', value: interviewAt },
-          { key: 'ceo-meeting', label: 'CEO Meeting', value: ceoAt },
-          { key: 'ceo-mode', label: 'CEO Mode', value: ceoMode },
+          { key: 'ceo-mode', label: 'CEO', value: ceoAt },
         ];
         const summaryMarkup = summaryItems
           .map((item) => `
             <div class="client-request-summary-item client-request-summary-item-${escapeHtml(item.key)}">
               <span><i class="client-request-summary-dot" aria-hidden="true"></i>${escapeHtml(item.label)}</span>
               <strong>${escapeHtml(item.value)}</strong>
+              ${item.support ? `<div class="client-request-summary-support">${item.support}</div>` : ''}
             </div>
           `)
           .join('');
-        const requestIdentityMeta = [
-          request.clientEmail ? `Email: ${request.clientEmail}` : '',
-          request.clientCompany ? `Company: ${request.clientCompany}` : '',
-        ].filter(Boolean);
-        const requestIdentityMarkup = requestIdentityMeta.length
-          ? `<p class="client-request-meta client-request-meta-inline">${escapeHtml(requestIdentityMeta.join('  |  '))}</p>`
+        const requestIdentityMarkup = [clientCompany
+          ? `<span class="client-request-company-pill">${escapeHtml(clientCompany)}</span>`
+          : '', emailLink
+          ? `<a class="client-request-contact-link" href="${escapeHtml(emailLink)}">Email client</a>`
+          : '']
+          .filter(Boolean)
+          .join('');
+        const requestIdentityMetaMarkup = requestIdentityMarkup
+          ? `<div class="client-request-meta-row">${requestIdentityMarkup}</div>`
           : '';
         const linksMarkup = interviewLink || ceoLink
           ? `
             <div class="client-request-link-list">
               ${interviewLink ? `<a class="client-request-link" href="${escapeHtml(interviewLink)}" target="_blank" rel="noopener noreferrer">Interview link</a>` : ''}
-              ${ceoLink ? `<a class="client-request-link" href="${escapeHtml(ceoLink)}" target="_blank" rel="noopener noreferrer">CEO meeting link</a>` : ''}
+              ${ceoLink ? `<a class="client-request-link" href="${escapeHtml(ceoLink)}" target="_blank" rel="noopener noreferrer">CEO link</a>` : ''}
             </div>
           `
           : '';
@@ -2574,10 +2619,10 @@
             actionButtons.push(`<button type="button" class="btn btn-light client-request-action-btn" data-action="set-request-status" data-status="approved" data-id="${escapeHtml(request.id)}">Approve</button>`);
           }
           if (status === 'approved') {
-            actionButtons.push(`<button type="button" class="btn btn-light client-request-action-btn" data-action="set-request-status" data-status="scheduled" data-id="${escapeHtml(request.id)}">Schedule</button>`);
+            actionButtons.push(`<button type="button" class="btn btn-light client-request-action-btn" data-action="set-request-status" data-status="scheduled" data-id="${escapeHtml(request.id)}">Set Time</button>`);
           }
           if (status === 'approved' || status === 'scheduled') {
-            actionButtons.push(`<button type="button" class="btn btn-primary client-request-action-btn" data-action="finalize-request" data-id="${escapeHtml(request.id)}">Finalize</button>`);
+            actionButtons.push(`<button type="button" class="btn btn-primary client-request-action-btn" data-action="finalize-request" data-id="${escapeHtml(request.id)}">Hire</button>`);
           }
           actionButtons.push(`<button type="button" class="btn btn-light client-request-action-btn client-request-action-danger" data-action="set-request-status" data-status="declined" data-id="${escapeHtml(request.id)}">Decline</button>`);
         }
@@ -2596,14 +2641,14 @@
 
         const messageMarkup = `
           <div class="client-request-message-block">
-            <span class="client-request-block-label client-request-block-label-message">Client message</span>
-            <p class="client-request-message">${escapeHtml(request.requestMessage || 'No message provided.')}</p>
+            <span class="client-request-block-label client-request-block-label-message">Message</span>
+            <p class="client-request-message" title="${escapeHtml(String(request.requestMessage || ''))}">${escapeHtml(messagePreview)}</p>
           </div>
         `;
         const noteMarkup = requestNote
           ? `
             <div class="client-request-note-block">
-              <span class="client-request-block-label client-request-block-label-note">Admin note</span>
+              <span class="client-request-block-label client-request-block-label-note">Note</span>
               <p class="client-request-note">${escapeHtml(requestNote)}</p>
             </div>
             `
@@ -2618,7 +2663,7 @@
               </div>
               <span class="pill-status ${statusClass}">${escapeHtml(requestStatusLabel(status))}</span>
             </div>
-            ${requestIdentityMarkup}
+            ${requestIdentityMetaMarkup}
             <div class="client-request-summary-grid">
               ${summaryMarkup}
             </div>
@@ -2635,6 +2680,8 @@
 
   function renderHiredProfilesTable() {
     if (!els.hiredProfilesTableBody) return;
+    const admin = isAdmin();
+    const columnCount = admin ? 5 : 4;
     if (els.hiredProfilesMeta) {
       els.hiredProfilesMeta.textContent = `${state.hiredProfiles.length} hires`;
     }
@@ -2645,7 +2692,7 @@
     if (!state.hiredProfiles.length) {
       els.hiredProfilesTableBody.innerHTML = `
         <tr>
-          <td colspan="4">
+          <td colspan="${columnCount}">
             <p class="message">No hired profiles recorded yet.</p>
           </td>
         </tr>
@@ -2656,10 +2703,26 @@
     els.hiredProfilesTableBody.innerHTML = state.hiredProfiles
       .map((profile) => `
         <tr>
-          <td data-label="Applicant"><strong>${escapeHtml(profile.participantName || '-')}</strong></td>
+          <td data-label="Applicant">
+            <div class="hired-profile-person">
+              <span class="hired-profile-avatar participant-avatar participant-avatar-fallback">${escapeHtml(initialsFromName(profile.participantName || 'Applicant'))}</span>
+              <strong>${escapeHtml(profile.participantName || '-')}</strong>
+            </div>
+          </td>
           <td data-label="Client">${escapeHtml(profile.clientName || '-')}</td>
           <td data-label="Company">${escapeHtml(profile.clientCompany || '-')}</td>
-          <td data-label="Hired At">${escapeHtml(formatDateTime(profile.hiredAt))}</td>
+          <td data-label="Hire Date">${escapeHtml(formatDateTime(profile.hiredAt))}</td>
+          ${admin ? `
+            <td data-label="Actions">
+              <button
+                type="button"
+                class="btn btn-danger table-action-btn hired-profile-revoke-btn"
+                data-action="revoke-hire"
+                data-request-id="${escapeHtml(profile.requestId || '')}"
+                data-hire-id="${escapeHtml(profile.id || '')}"
+              >Revoke</button>
+            </td>
+          ` : ''}
         </tr>
       `)
       .join('');
@@ -2889,7 +2952,7 @@
         return `
           <tr>
             <td data-label="Name">
-              ${renderParticipantNameCell(participant)}
+              ${renderParticipantNameCell(participant, 'participant-card-name-cell')}
             </td>
             <td data-label="Contact">
               ${contactMarkup}
@@ -4619,6 +4682,10 @@
     return state.clientRequests.find((request) => request.id === requestId) || null;
   }
 
+  function getHiredProfileById(hireId) {
+    return state.hiredProfiles.find((profile) => profile.id === hireId) || null;
+  }
+
   function getRequestActionSelectionSet(request) {
     if (!request?.id) {
       return new Set();
@@ -4742,6 +4809,37 @@
     });
   }
 
+  async function revokeHiredProfileSelection(requestId, hireId, payload = {}) {
+    await api(`/api/admin/client-requests/${encodeURIComponent(requestId)}/hired/${encodeURIComponent(hireId)}/revoke`, {
+      method: 'POST',
+      body: {
+        reason: payload.primary || '',
+        note: payload.notes || '',
+      },
+    });
+  }
+
+  async function promptForRevokeHire(profile) {
+    if (!profile) return null;
+    return showSystemPromptDialog({
+      title: 'Revoke hired applicant',
+      subtitle: 'Remove this applicant from active hires for this request.',
+      message: `Revoke ${profile.participantName || 'this applicant'} from ${profile.clientName || 'this client request'}?`,
+      confirmText: 'Revoke',
+      danger: true,
+      primary: {
+        label: 'Reason',
+        type: 'text',
+        placeholder: 'e.g. resigned, performance issue, client request',
+        required: true,
+      },
+      notes: {
+        label: 'Admin note (optional)',
+        placeholder: 'Add context for audit history.',
+      },
+    });
+  }
+
   async function handleClientRequestsListClick(event) {
     const actionButton = event.target.closest('[data-action]');
     if (!actionButton) return;
@@ -4802,6 +4900,39 @@
       }
     } catch (error) {
       notifyAction(error.message || 'Failed to update client request.', true, { title: 'Update failed', autoClose: false });
+    }
+  }
+
+  async function handleHiredProfilesTableClick(event) {
+    const actionButton = event.target.closest('[data-action]');
+    if (!actionButton || !isAdmin()) return;
+
+    const action = String(actionButton.getAttribute('data-action') || '').trim();
+    if (action !== 'revoke-hire') return;
+
+    const requestId = String(actionButton.getAttribute('data-request-id') || '').trim();
+    const hireId = String(actionButton.getAttribute('data-hire-id') || '').trim();
+    if (!requestId || !hireId) return;
+
+    const profile = getHiredProfileById(hireId);
+    if (!profile) return;
+
+    try {
+      const values = await promptForRevokeHire(profile);
+      if (!values) return;
+      await withPendingAction({
+        key: `hired-profile-revoke:${hireId}`,
+        button: actionButton,
+        peers: getPendingPeers(actionButton),
+        pendingText: 'Revoking...',
+        defaultText: actionButton.textContent || 'Revoke',
+      }, async () => {
+        await revokeHiredProfileSelection(requestId, hireId, values);
+      });
+      refreshAfterAction();
+      notifyAction('Hired applicant revoked successfully.', false, { title: 'Updated' });
+    } catch (error) {
+      notifyAction(error.message || 'Failed to revoke hired applicant.', true, { title: 'Update failed', autoClose: false });
     }
   }
 
@@ -4951,6 +5082,9 @@
     }
     if (els.clientRequestsList) {
       els.clientRequestsList.addEventListener('click', handleClientRequestsListClick);
+    }
+    if (els.hiredProfilesTableBody) {
+      els.hiredProfilesTableBody.addEventListener('click', handleHiredProfilesTableClick);
     }
 
     els.createParticipantBtn.addEventListener('click', () => {

@@ -7,10 +7,7 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="description" content="AOAS talent pool CRM dashboard">
   <link rel="icon" type="image/x-icon" href="/assets/icons/favicon.ico">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/admin.css?v=20260310z">
+  <link rel="stylesheet" href="/assets/css/admin.css?v=20260312k">
 </head>
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
@@ -461,8 +458,8 @@
                 <p class="card-subtitle">Existing categories and quick actions.</p>
               </div>
             </div>
-            <div class="table-wrap">
-              <table class="data-table">
+            <div class="table-wrap sections-table-wrap">
+              <table class="data-table sections-table">
                 <thead>
                   <tr>
                     <th>Section</th>
@@ -520,9 +517,9 @@
           <article class="card workspace-card client-workspace-card">
             <div class="workspace-head">
               <div class="workspace-copy">
-                <p id="clientRequestsHeroKicker" class="workspace-kicker">Request workflow</p>
+                <p id="clientRequestsHeroKicker" class="workspace-kicker">Requests</p>
                 <h4>Client Requests</h4>
-                <p id="clientRequestsHeroSubtitle" class="card-subtitle">Build a shortlist, compose a request, and track decisions without losing context.</p>
+                <p id="clientRequestsHeroSubtitle" class="card-subtitle">Review requests and move the best talent forward.</p>
               </div>
               <div class="workspace-actions client-workspace-actions">
                 <div class="workspace-meta-row client-requests-meta-row">
@@ -538,8 +535,8 @@
             <details id="clientPoolPanel" class="card client-pool-card collapsible-card client-pool-collapsible" open>
               <summary class="card-head compact-card-head collapsible-summary client-pool-summary">
                 <div class="collapsible-summary-copy">
-                  <h4>Select Candidate Profiles</h4>
-                  <p class="card-subtitle">Choose the strongest candidates, then send a polished request.</p>
+                  <h4>Choose Profiles</h4>
+                  <p class="card-subtitle">Search and select talent.</p>
                 </div>
                 <span class="collapse-chip">Candidates</span>
               </summary>
@@ -604,22 +601,22 @@
             <article id="clientRequestSummaryCard" class="card client-request-summary-card client-request-builder-card">
               <div class="card-head compact-card-head">
                 <div>
-                  <h4>Request Builder</h4>
-                  <p class="card-subtitle">Pick candidate profiles, complete the request details, and send everything in one smooth flow.</p>
+                  <h4>New Request</h4>
+                  <p class="card-subtitle">Pick talent and send.</p>
                 </div>
                 <span class="head-meta">Builder</span>
               </div>
               <div class="client-summary-grid client-request-builder-summary">
                 <div class="client-summary-item">
-                  <span>Selected profiles</span>
+                  <span>Selected</span>
                   <strong id="clientSelectedMetaSecondary">0</strong>
                 </div>
                 <div class="client-summary-item">
-                  <span>Open requests</span>
+                  <span>Open</span>
                   <strong id="clientRequestsMetaSecondary">0</strong>
                 </div>
                 <div class="client-summary-item">
-                  <span>Finalized hires</span>
+                  <span>Hired</span>
                   <strong id="hiredProfilesMetaSecondary">0</strong>
                 </div>
               </div>
@@ -663,8 +660,8 @@
             <article id="clientRequestTrackerCard" class="card request-tracker-card">
               <div class="card-head compact-card-head">
                 <div>
-                  <h4>Request Tracker</h4>
-                  <p class="card-subtitle">Review status changes, schedules, and finalization actions.</p>
+                  <h4>Open Requests</h4>
+                  <p class="card-subtitle">Review, schedule, and hire.</p>
                 </div>
                 <span id="clientRequestsMeta" class="head-meta"></span>
               </div>
@@ -674,8 +671,8 @@
             <article id="hiredProfilesCard" class="card hired-profiles-card">
               <div class="card-head compact-card-head">
                 <div>
-                  <h4>Hired Profiles by Client</h4>
-                  <p class="card-subtitle">Finalized placements across recent client requests.</p>
+                  <h4>Recent Hires</h4>
+                  <p class="card-subtitle">Latest placements.</p>
                 </div>
                 <span id="hiredProfilesMeta" class="head-meta"></span>
               </div>
@@ -686,7 +683,8 @@
                       <th>Applicant</th>
                       <th>Client</th>
                       <th>Company</th>
-                      <th>Hired At</th>
+                      <th>Hire Date</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody id="hiredProfilesTableBody"></tbody>
@@ -961,6 +959,6 @@
     </div>
   </section>
 
-  <script src="/assets/js/admin.js?v=20260311a" defer></script>
+  <script src="/assets/js/admin.js?v=20260312c" defer></script>
 </body>
 </html>

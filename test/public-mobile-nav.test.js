@@ -9,12 +9,30 @@ const styleCss = fs.readFileSync(path.resolve(__dirname, '../assets/css/style.cs
 const scriptJs = fs.readFileSync(path.resolve(__dirname, '../assets/js/script.js'), 'utf8');
 
 test('public pages expose the premium mobile drawer markup and required destinations', () => {
-  assert.match(indexHtml, /https:\/\/cdn\.tailwindcss\.com/);
-  assert.match(careersHtml, /https:\/\/cdn\.tailwindcss\.com/);
+  assert.doesNotMatch(indexHtml, /https:\/\/cdn\.tailwindcss\.com/);
+  assert.doesNotMatch(careersHtml, /https:\/\/cdn\.tailwindcss\.com/);
+  assert.doesNotMatch(indexHtml, /fonts\.googleapis\.com|fonts\.gstatic\.com/);
+  assert.doesNotMatch(careersHtml, /fonts\.googleapis\.com|fonts\.gstatic\.com/);
+  assert.match(indexHtml, /\/assets\/vendor\/leaflet\/leaflet\.css\?v=1\.9\.4/);
+  assert.match(indexHtml, /\/assets\/vendor\/leaflet-routing-machine\/leaflet-routing-machine\.css\?v=3\.2\.12/);
+  assert.match(indexHtml, /\/assets\/vendor\/leaflet\/leaflet\.js\?v=1\.9\.4/);
+  assert.match(indexHtml, /\/assets\/vendor\/leaflet-routing-machine\/leaflet-routing-machine\.js\?v=3\.2\.12/);
+  assert.match(careersHtml, /\/assets\/vendor\/leaflet\/leaflet\.css\?v=1\.9\.4/);
+  assert.match(careersHtml, /\/assets\/vendor\/leaflet-routing-machine\/leaflet-routing-machine\.css\?v=3\.2\.12/);
+  assert.match(careersHtml, /\/assets\/vendor\/leaflet\/leaflet\.js\?v=1\.9\.4/);
+  assert.match(careersHtml, /\/assets\/vendor\/leaflet-routing-machine\/leaflet-routing-machine\.js\?v=3\.2\.12/);
+  assert.doesNotMatch(indexHtml, /https:\/\/unpkg\.com\/leaflet|https:\/\/unpkg\.com\/leaflet-routing-machine/);
+  assert.doesNotMatch(careersHtml, /https:\/\/unpkg\.com\/leaflet|https:\/\/unpkg\.com\/leaflet-routing-machine/);
   assert.match(indexHtml, /aria-controls="mobileNavDrawer"/);
   assert.match(careersHtml, /aria-controls="mobileNavDrawer"/);
   assert.match(indexHtml, /id="mobileNavDrawer"[\s\S]*role="dialog"[\s\S]*aria-modal="true"/);
   assert.match(careersHtml, /id="mobileNavDrawer"[\s\S]*role="dialog"[\s\S]*aria-modal="true"/);
+  assert.match(indexHtml, /class="mobile-nav-drawer"/);
+  assert.match(careersHtml, /class="mobile-nav-drawer"/);
+  assert.match(indexHtml, /class="mobile-nav-link"/);
+  assert.match(careersHtml, /class="mobile-nav-link"/);
+  assert.doesNotMatch(indexHtml, /z-\[1090\]|bg-\[/);
+  assert.doesNotMatch(careersHtml, /z-\[1090\]|bg-\[/);
   assert.match(indexHtml, /assets\/images\/brand\/aoas-logo\.png/);
   assert.match(careersHtml, /assets\/images\/brand\/aoas-logo\.png/);
   assert.match(indexHtml, /data-mobile-nav-close/);
@@ -54,7 +72,8 @@ test('public stylesheet defines the drawer shell and removes the legacy dropdown
   assert.match(styleCss, /\.mobile-nav-item/);
   assert.match(styleCss, /\.hero-brand-panel/);
   assert.match(styleCss, /@keyframes heroBrandReveal/);
-  assert.match(styleCss, /backdrop-filter: blur\(16px\) !important/);
+  assert.match(styleCss, /backdrop-filter: blur\(10px\) !important/);
+  assert.match(styleCss, /backdrop-filter: blur\(13px\) !important/);
   assert.match(styleCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.doesNotMatch(styleCss, /\.hamburger-menu~\.header-actions/);
   assert.doesNotMatch(styleCss, /\.hamburger-menu\.active span:nth-child\(1\)/);

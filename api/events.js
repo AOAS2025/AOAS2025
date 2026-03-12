@@ -1,4 +1,9 @@
 const { appendJsonLine, sanitizeText } = require('../lib/inquiry-utils');
+const {
+  applySecurityHeaders,
+  rejectIfUntrustedOrigin,
+  setCors,
+} = require('../lib/http-security');
 
 function getRemoteIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
@@ -29,11 +34,12 @@ function parseBody(body) {
 }
 
 module.exports = async (req, res) => {
-  const origin = req.headers.origin;
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applySecurityHeaders(req, res);
+  setCors(req, res, 'GET,OPTIONS,POST');
+
+  if (rejectIfUntrustedOrigin(req, res)) {
+    return;
+  }
 
   if (req.method === 'OPTIONS') {
     res.status(204).end();

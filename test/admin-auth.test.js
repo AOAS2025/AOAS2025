@@ -215,6 +215,113 @@ test('public signup requires all three secret answers before touching Supabase',
   });
 });
 
+test('admin account status updates do not require secret answers when recovery fields are untouched', { concurrency: false }, async (t) => {
+  t.after(restoreEnv);
+  const adminCrm = loadAdminCrmWithEnv({
+    ADMIN_USERNAME: 'admin',
+    ADMIN_PASSWORD: 'StrongPass123',
+  });
+
+  const existingAccount = {
+    username: 'arar',
+    displayName: 'Alejandro Martinez Jr',
+    firstName: 'Alejandro',
+    lastName: 'Martinez Jr',
+    recoveryEmail: '',
+    secretQuestionKeys: ['city_of_birth', 'first_school', 'childhood_nickname'],
+    secretAnswerHashes: ['hash:city', 'hash:school', 'hash:nickname'],
+  };
+
+  const payload = adminCrm.__test.sanitizeAccountWritePayload(
+    { isActive: true },
+    {
+      existingAccount,
+      requireNames: false,
+      requirePassword: false,
+      requireSecretAnswers: false,
+    },
+  );
+
+  assert.equal(payload.username, 'arar');
+  assert.deepEqual(payload.secretQuestionKeys, existingAccount.secretQuestionKeys);
+  assert.deepEqual(payload.secretAnswerHashes, existingAccount.secretAnswerHashes);
+});
+
+test('admin account updates still reject partial secret-answer changes', { concurrency: false }, async (t) => {
+  t.after(restoreEnv);
+  const adminCrm = loadAdminCrmWithEnv({
+    ADMIN_USERNAME: 'admin',
+    ADMIN_PASSWORD: 'StrongPass123',
+  });
+
+  const existingAccount = {
+    username: 'arar',
+    displayName: 'Alejandro Martinez Jr',
+    firstName: 'Alejandro',
+    lastName: 'Martinez Jr',
+    recoveryEmail: '',
+    secretQuestionKeys: ['city_of_birth', 'first_school', 'childhood_nickname'],
+    secretAnswerHashes: ['hash:city', 'hash:school', 'hash:nickname'],
+  };
+
+  assert.throws(
+    () => adminCrm.__test.sanitizeAccountWritePayload(
+      {
+        secretAnswers: {
+          city_of_birth: 'Manila',
+          first_school: '',
+        },
+      },
+      {
+        existingAccount,
+        requireNames: false,
+        requirePassword: false,
+        requireSecretAnswers: false,
+      },
+    ),
+    /All three secret question answers are required\./,
+  );
+});
+
+test('account status updates allow empty secret-answer fields without requiring all answers', { concurrency: false }, async (t) => {
+  t.after(restoreEnv);
+  const adminCrm = loadAdminCrmWithEnv({
+    ADMIN_USERNAME: 'admin',
+    ADMIN_PASSWORD: 'StrongPass123',
+  });
+
+  const existingAccount = {
+    username: 'arar',
+    displayName: 'Alejandro Martinez Jr',
+    firstName: 'Alejandro',
+    lastName: 'Martinez Jr',
+    recoveryEmail: '',
+    secretQuestionKeys: ['city_of_birth', 'first_school', 'childhood_nickname'],
+    secretAnswerHashes: ['hash:city', 'hash:school', 'hash:nickname'],
+  };
+
+  const payload = adminCrm.__test.sanitizeAccountWritePayload(
+    {
+      isActive: true,
+      secretAnswers: {
+        city_of_birth: '',
+        first_school: '',
+        childhood_nickname: '',
+      },
+    },
+    {
+      existingAccount,
+      requireNames: false,
+      requirePassword: false,
+      requireSecretAnswers: false,
+    },
+  );
+
+  assert.equal(payload.username, 'arar');
+  assert.deepEqual(payload.secretQuestionKeys, existingAccount.secretQuestionKeys);
+  assert.deepEqual(payload.secretAnswerHashes, existingAccount.secretAnswerHashes);
+});
+
 test('viewer role cannot update or finalize client requests without admin access', { concurrency: false }, async (t) => {
   t.after(restoreEnv);
   const adminCrm = loadAdminCrmWithEnv({
@@ -234,6 +341,14 @@ test('viewer role cannot update or finalize client requests without admin access
 
   await assert.rejects(
     () => adminCrm.finalizeClientRequest('request-id', { hireMode: 'all' }, {
+      role: adminCrm.ROLES.VIEWER,
+      username: 'viewer',
+    }),
+    (error) => error && error.status === 403,
+  );
+
+  await assert.rejects(
+    () => adminCrm.revokeHiredProfile('request-id', 'hire-id', {}, {
       role: adminCrm.ROLES.VIEWER,
       username: 'viewer',
     }),

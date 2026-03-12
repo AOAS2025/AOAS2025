@@ -1,11 +1,32 @@
 const { readJsonLines, buildMetricsFromRecords } = require('../lib/inquiry-utils');
+const {
+  resolveUserFromRequest,
+  assertAdmin,
+} = require('../lib/admin-crm');
+const {
+  applySecurityHeaders,
+  rejectIfUntrustedOrigin,
+  setCors,
+} = require('../lib/http-security');
+
+function getSafeErrorMessage(error) {
+  const status = Number.isInteger(error?.status) ? error.status : 500;
+  if (typeof error?.publicMessage === 'string' && error.publicMessage.trim()) {
+    return error.publicMessage;
+  }
+  if (status >= 500) {
+    return 'Failed to load metrics.';
+  }
+  return error?.message || 'Failed to load metrics.';
+}
 
 module.exports = async (req, res) => {
-  const origin = req.headers.origin;
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applySecurityHeaders(req, res);
+  setCors(req, res, 'GET,OPTIONS');
+
+  if (rejectIfUntrustedOrigin(req, res)) {
+    return;
+  }
 
   if (req.method === 'OPTIONS') {
     res.status(204).end();
@@ -21,6 +42,9 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const user = await resolveUserFromRequest(req);
+    assertAdmin(user);
+
     const [inquiries, events] = await Promise.all([
       readJsonLines('inquiries.jsonl'),
       readJsonLines('events.jsonl'),
@@ -33,10 +57,13 @@ module.exports = async (req, res) => {
       metrics,
     });
   } catch (error) {
-    console.error('Metrics API error:', error);
-    res.status(500).json({
+    const status = Number.isInteger(error?.status) ? error.status : 500;
+    if (status >= 500) {
+      console.error('Metrics API error:', error?.stack || error?.message || error);
+    }
+    res.status(status).json({
       success: false,
-      error: 'Failed to load metrics.',
+      error: getSafeErrorMessage(error),
     });
   }
 };
