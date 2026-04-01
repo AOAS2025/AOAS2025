@@ -6,6 +6,7 @@
   "author": "",
   "license": "ISC",
   "scripts": {
+    "build": "node -e \"console.log('No build step required for AOAS Web.')\"",
     "dev": "node server.js",
     "start": "node server.js",
     "test": "node --test",
